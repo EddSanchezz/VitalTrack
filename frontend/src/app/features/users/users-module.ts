@@ -2,7 +2,7 @@
 import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UsersListComponent } from './pages/users-list/users-list.component';
 import { UsersEditComponent } from './pages/users-edit/users-edit.component';
 import { UserCreate } from './pages/user-create/user-create';
@@ -27,7 +27,7 @@ export class UsersModule {} */
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { UsersListComponent } from './pages/users-list/users-list.component';
 import { UsersEditComponent } from './pages/users-edit/users-edit.component';
@@ -50,6 +50,7 @@ const routes: Routes = [
   ],
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterModule.forChild(routes)
   ]

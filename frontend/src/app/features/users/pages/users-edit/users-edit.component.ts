@@ -30,7 +30,10 @@ export class UsersEditComponent implements OnInit {
     });
 
     if (this.id) {
-      this.svc.get(this.id).subscribe(user => this.form.patchValue(user));
+      this.svc.get(this.id).subscribe({
+        next: (user: User) => this.form.patchValue(user),
+        error: (err: any) => console.error('Error loading user:', err)
+      });
     }
   }
 

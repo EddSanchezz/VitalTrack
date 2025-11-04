@@ -1,14 +1,46 @@
 <div class="app-container">
-  <header class="app-header">
-    <h1>VitalTrack</h1>
-    <nav>
-      <a routerLink="/usuarios" routerLinkActive="active">Usuarios</a>
-      <a routerLink="/perfiles" routerLinkActive="active">Perfiles</a>
-      <a routerLink="/dispositivos" routerLinkActive="active">Dispositivos</a>
-      <a routerLink="/actividades" routerLinkActive="active">Actividades</a>
-    </nav>
-  </header>
-  <main class="app-main">
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="14" fill="#9333EA" />
+        <path d="M16 8L20 16L16 24L12 16L16 8Z" fill="white" opacity="0.9"/>
+      </svg>
+      <span class="brand-name">VitalTrack</span>
+    </div>
+    <div class="nav-links">
+      <a routerLink="/usuarios" routerLinkActive="active" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Usuarios
+      </a>
+      <a routerLink="/perfiles" routerLinkActive="active" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Perfiles
+      </a>
+      <a routerLink="/dispositivos" routerLinkActive="active" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+          <line x1="12" y1="18" x2="12.01" y2="18"/>
+        </svg>
+        Dispositivos
+      </a>
+      <a routerLink="/actividades" routerLinkActive="active" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Actividades
+      </a>
+    </div>
+  </nav>
+
+  <main class="content">
     <router-outlet />
   </main>
 </div>

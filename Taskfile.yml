@@ -1,0 +1,86 @@
+version: "3"
+
+vars:
+  API_URL: http://localhost:3000
+  PMA_URL: http://localhost:8081
+
+tasks:
+  run:
+    desc: "Levanta TODOS los servicios: DB + API + phpMyAdmin + Frontend Angular"
+    cmds:
+      - docker compose up -d --build || sudo docker compose up -d --build
+      - echo "✅ Contenedores Docker arrancados (DB + API + phpMyAdmin)"
+      - echo "⏳ Esperando 5 segundos a que MySQL esté listo..."
+      - sleep 5
+      - echo "🚀 Instalando dependencias del frontend..."
+      - cd frontend && npm install
+      - echo "🌐 Arrancando Angular dev server..."
+      - echo "   Ejecuta en otra terminal → cd frontend && npm start"
+      - echo ""
+      - echo "=========================================="
+      - echo "✅ Contenedores Docker listos:"
+      - 'echo "   🔧 API (Backend): http://localhost:3000"'
+      - 'echo "   🗄️  phpMyAdmin: http://localhost:8081"'
+      - 'echo "   🐬 MySQL: localhost:3307"'
+      - echo ""
+      - echo "⚠️  Para el frontend Angular:"
+      - 'echo "   cd frontend && npm start"'
+      - 'echo "   🌐 Frontend: http://localhost:4200"'
+      - echo "=========================================="
+
+  db:
+    desc: "Levanta solo la base de datos (y phpMyAdmin)"
+    cmds:
+      - docker compose up -d db phpmyadmin || sudo docker compose up -d db phpmyadmin
+
+  backend:dev:
+    desc: "Ejecuta el backend local con nodemon (requiere DB levantada)"
+    dir: backend
+    cmds:
+      - npm install
+      - |
+        if [ ! -f .env ]; then
+          cp .env.example .env;
+          echo "Creado backend/.env a partir de .env.example";
+        fi
+      - npm run dev
+
+  dev:local:
+    desc: "DB en Docker + backend local"
+    cmds:
+      - task db
+      - task backend:dev
+
+  web:dev:
+    desc: "Arranca el frontend Angular en http://localhost:4200"
+    dir: frontend
+    cmds:
+      - npm install
+      - echo "🌐 Iniciando Angular en http://localhost:4200"
+      - npm start
+
+  dev:full:
+    desc: "Levanta DB+API en Docker (ejecuta web:dev en otra terminal)"
+    cmds:
+      - task run
+
+  health:
+    desc: "Consulta /health de la API"
+    cmds:
+      - "curl -fsSL http://localhost:3000/health || true"
+
+  logs:
+    desc: "Logs del backend en Docker"
+    cmds:
+      - docker compose logs -f backend || sudo docker compose logs -f backend
+
+  stop:
+    desc: "Apaga contenedores Docker"
+    cmds:
+      - docker compose down || sudo docker compose down
+      - echo "⚠️  Recuerda detener manualmente el proceso de Angular (Ctrl+C en su terminal o pkill -f 'ng serve')"
+
+  reset:
+    desc: "Apaga y elimina volúmenes (resetea la DB)"
+    cmds:
+      - docker compose down -v || sudo docker compose down -v

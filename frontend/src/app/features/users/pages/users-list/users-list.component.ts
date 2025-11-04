@@ -36,24 +36,67 @@ export class UsersListComponent implements OnInit {
   }
 } */
 import { Component, OnInit } from '@angular/core';
-import { UsersService} from '../../user.service';
+import { UsersService } from '../../user.service';
 import { User } from '../../models/user.model';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 
 @Component({
   selector: 'app-user-list',
-  standalone:false,
+  standalone: false,
   templateUrl: './users-list.component.html',
 })
 export class UsersListComponent implements OnInit {
   users: User[] = [];
+  form: any = { id: null, nombre: '', email: '', cedula: '', consentimiento_privacidad: true };
 
-  constructor(private UsersService: UsersService) {}
+  constructor(private usersSvc: UsersService) {}
 
   ngOnInit() {
-    this.UsersService.getUsers().subscribe(data => {
-      this.users = data;
-    });
+    this.load();
+  }
+
+  load() {
+    this.usersSvc.getUsers().subscribe((data) => (this.users = data));
+  }
+
+  edit(u: User) {
+    this.form = {
+      id: u.id,
+      nombre: u.nombre || u.name,
+      email: u.email,
+    };
+  }
+
+  reset() {
+    this.form = { id: null, nombre: '', email: '', cedula: '', consentimiento_privacidad: true };
+  }
+
+  save() {
+    const payload: any = {
+      nombre: this.form.nombre,
+      email: this.form.email,
+      cedula: this.form.cedula || null,
+      consentimiento_privacidad: !!this.form.consentimiento_privacidad,
+    };
+
+    if (this.form.id) {
+      this.usersSvc.update(this.form.id, payload).subscribe(() => {
+        this.reset();
+        this.load();
+      });
+    } else {
+      this.usersSvc.create(payload).subscribe(() => {
+        this.reset();
+        this.load();
+      });
+    }
+  }
+
+  remove(u: User) {
+    if (!confirm('Eliminar usuario?')) return;
+    this.usersSvc.delete(u.id).subscribe(() => this.load());
   }
 }
 
