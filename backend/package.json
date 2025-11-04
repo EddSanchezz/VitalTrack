@@ -1,0 +1,23 @@
+{
+	"name": "vitaltrack-backend",
+	"version": "0.1.0",
+	"description": "API backend for VitalTrack (Express + MySQL)",
+	"main": "src/server.js",
+	"type": "module",
+	"scripts": {
+		"start": "node src/server.js",
+		"dev": "nodemon --watch src --ext js --exec node src/server.js"
+	},
+	"dependencies": {
+		"cors": "^2.8.5",
+		"dotenv": "^16.4.5",
+		"express": "^4.21.1",
+		"mysql2": "^3.11.3"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.7"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}
