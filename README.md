@@ -1,56 +1,135 @@
 # VitalTrack
 
-API y base de datos para estadísticas de salud tipo Google Fit.
+Sistema de estadísticas de salud (tipo Google Fit) con backend Express + MySQL y frontend Angular.
 
-Este repo incluye:
+## Stack
 
-- MySQL 8 inicializado con el esquema de VitalTrack (Docker)
-- Backend Node.js (Express) con 4 CRUDs: usuarios, perfiles, dispositivos y actividades
-- phpMyAdmin para explorar la base de datos
+- **Backend**: Node.js (Express) con 4 CRUDs REST: usuarios, perfiles, dispositivos y actividades
+- **Base de datos**: MySQL 8 en Docker con esquema inicial
+- **Frontend**: Angular 20 con HttpClient, routing y proxy a API
+- **Gestión DB**: phpMyAdmin para explorar la base de datos
 
-## Ejecutar con Docker
+## Ejecutar todo el proyecto
 
-Requisitos: Docker y Docker Compose.
+### Requisitos
 
-1. Levanta todo el stack:
+- Docker y Docker Compose
+- Node.js 18+ (para el frontend)
+
+### Pasos
+
+1️⃣ **Levantar backend + base de datos en Docker**
 
 ```bash
 docker compose up -d --build
 ```
 
-2. Servicios:
+Esto inicia:
 
-- API: http://localhost:3000 (health: /health)
-- phpMyAdmin: http://localhost:8081 (host: db, usuario: vt_user, pass: vt_pass)
-- MySQL: localhost:3306 (database: vitaltrack)
+- MySQL en `localhost:3306` (DB: vitaltrack, user: vt_user, pass: vt_pass)
+- Backend API en `http://localhost:3000` (health: /health)
+- phpMyAdmin en `http://localhost:8081`
 
-3. Variables (se configuran en docker-compose.yml):
+2️⃣ **Instalar dependencias del frontend**
 
-- DB_HOST=db, DB_USER=vt_user, DB_PASSWORD=vt_pass, DB_NAME=vitaltrack
+```bash
+cd frontend
+npm install
+```
 
-## Endpoints principales
+3️⃣ **Ejecutar el frontend Angular con proxy**
 
-Base URL: http://localhost:3000/api
+```bash
+npm start
+```
 
-- GET/POST/PUT/DELETE `/usuarios`
-- GET/POST/PUT/DELETE `/perfiles`
-- GET/POST/PUT/DELETE `/dispositivos`
-- GET/POST/PUT/DELETE `/actividades`
-  - Filtro opcional: `/actividades?usuario_id=1`
+El frontend abre en `http://localhost:4200` y proxy `/api` hacia el backend en puerto 3000.
 
-Ejemplo crear usuario:
+Navega a:
+
+- http://localhost:4200/usuarios
+- http://localhost:4200/perfiles
+- http://localhost:4200/dispositivos
+- http://localhost:4200/actividades
+
+## Estructura
+
+```
+VitalTrack/
+├── backend/          # API Express + MySQL
+│   ├── src/
+│   │   ├── server.js
+│   │   ├── db.js
+│   │   └── routes/   # usuarios, perfiles, dispositivos, actividades
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/         # Angular 20
+│   ├── src/app/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── pages/
+│   │   └── features/users/
+│   ├── proxy.conf.json
+│   └── package.json
+├── db/
+│   └── init.sql      # Esquema inicial + datos
+└── docker-compose.yml
+```
+
+## Endpoints API
+
+Base URL: `http://localhost:3000/api`
+
+| Método | Endpoint      | Descripción        |
+| ------ | ------------- | ------------------ |
+| GET    | /usuarios     | Listar usuarios    |
+| POST   | /usuarios     | Crear usuario      |
+| GET    | /usuarios/:id | Obtener usuario    |
+| PUT    | /usuarios/:id | Actualizar usuario |
+| DELETE | /usuarios/:id | Eliminar usuario   |
+
+| ... (igual para perfiles, dispositivos, actividades)
+
+Filtro especial:
+
+- `GET /actividades?usuario_id=1` - Actividades de un usuario
+
+### Ejemplo crear usuario
 
 ```bash
 curl -X POST http://localhost:3000/api/usuarios \
-	-H 'Content-Type: application/json' \
-	-d '{"cedula":"123","nombre":"Ana","email":"ana@example.com","fecha_nacimiento":"1995-05-10","consentimiento_privacidad":true}'
+  -H 'Content-Type: application/json' \
+  -d '{"cedula":"123","nombre":"Ana","email":"ana@example.com","fecha_nacimiento":"1995-05-10","consentimiento_privacidad":true}'
 ```
 
-## Desarrollo
+## Solo Docker (sin frontend local)
 
-Durante el desarrollo, el contenedor del backend usa `nodemon` con hot reload y monta `./backend` como volumen.
+Si quieres correr solo el backend dockerizado y probar la API directamente:
+
+```bash
+docker compose up -d --build
+curl http://localhost:3000/health
+```
+
+## Solo backend local (sin Docker)
+
+Si prefieres correr el backend fuera de Docker:
+
+```bash
+# 1. Levanta solo MySQL
+docker compose up -d db phpmyadmin
+
+# 2. Instala backend y configura .env
+cd backend
+npm install
+cp .env.example .env
+
+# 3. Arranca el servidor
+npm run dev
+```
 
 ## Próximos pasos
 
-- Crear frontend en Angular y consumir estos endpoints
-- Añadir autenticación y más entidades del diagrama (sensores, lecturas, retos, etc.)
+- Añadir autenticación (JWT)
+- Integrar más entidades del diagrama (sensores, lecturas, retos, etc.)
+- Desplegar en la nube (Azure/AWS)

@@ -1,22 +1,10 @@
-export interface ConsentFlags {
-  analytics: boolean;
-  sharing: boolean;
-  export: boolean;
-}
-
-export type UserRole = 'user' | 'coach' | 'health_professional' | 'admin';
-
+// Matches backend 'usuario' table
 export interface User {
-  id: number;
-  name: string;
+  id?: number;
+  cedula?: string;
+  nombre: string;
   email: string;
-  dob?: string; // ISO date YYYY-MM-DD
-  age: number;
-  sex?: 'M' | 'F' | 'O';
-  weight?: number; // kg
-  height?: number; // cm
-  role?: UserRole;
-  createdAt?: string; // ISO timestamp
-  updatedAt?: string; // ISO timestamp
-  //consent?: ConsentFlags;
+  fecha_registro?: string; // ISO datetime
+  fecha_nacimiento?: string; // ISO date
+  consentimiento_privacidad?: boolean;
 }
