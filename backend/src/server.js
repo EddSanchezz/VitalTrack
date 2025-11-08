@@ -2,6 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { ping } from './db.js';
+import swaggerUi from 'swagger-ui-express';
+import yaml from 'js-yaml';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 import usuariosRouter from './routes/usuarios.js';
 import perfilesRouter from './routes/perfiles.js';
@@ -25,6 +30,21 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+// Swagger Docs
+try {
+  // Resolve openapi.yaml relative to this file so it works regardless of CWD
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const specPath = join(__dirname, '../openapi.yaml');
+  const file = readFileSync(specPath, 'utf8');
+  const openapiDocument = yaml.load(file);
+  app.get('/api/docs.json', (_req, res) => res.json(openapiDocument));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
+  // Documentación Swagger disponible en /api/docs
+} catch (e) {
+  console.warn('No se pudo cargar la especificación Swagger:', e.message);
+}
+
 // Routes
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/perfiles', perfilesRouter);
@@ -36,5 +56,5 @@ app.use((req, res) => res.status(404).json({ message: 'Not Found' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`VitalTrack API listening on http://localhost:${PORT}`);
+  // API VitalTrack iniciada
 });

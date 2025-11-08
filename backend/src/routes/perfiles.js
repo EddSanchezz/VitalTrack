@@ -1,45 +1,47 @@
 import { Router } from 'express';
-import { pool } from '../db.js';
+import { query } from '../db.js';
+import { validateRequired, badRequest, notFound } from '../utils/http.js';
 
 const router = Router();
 
 // Create perfil
 router.post('/', async (req, res) => {
   try {
+    if (!validateRequired(res, req.body, ['usuario_id'])) return;
     const { usuario_id, objetivo, sexo, altura, estado } = req.body;
-    const [result] = await pool.execute(
-      `INSERT INTO perfil (usuario_id, objetivo, sexo, altura, estado)
-       VALUES (?, ?, ?, ?, ?)`,
-      [usuario_id, objetivo || null, sexo || null, altura || null, estado || null]
-    );
-    const [rows] = await pool.execute('SELECT * FROM perfil WHERE id = ?', [result.insertId]);
-    res.status(201).json(rows[0]);
+    const usuario = await query('SELECT id FROM usuario WHERE id = ?', [usuario_id]);
+    if (!Array.isArray(usuario) || !usuario.length) return badRequest(res, 'usuario_id no existe');
+    const sql = `INSERT INTO perfil (usuario_id, objetivo, sexo, altura, estado)
+                 VALUES (?, ?, ?, ?, ?)`;
+    const params = [usuario_id, objetivo || null, sexo || null, altura || null, estado || null];
+    const result = await query(sql, params);
+    const insertId = result.insertId;
+    const perfil = await query('SELECT * FROM perfil WHERE id = ?', [insertId]);
+    res.status(201).json(Array.isArray(perfil) ? perfil[0] : perfil);
   } catch (e) {
-    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
-      return res.status(400).json({ message: 'usuario_id no existe' });
-    }
-    res.status(500).json({ message: e.message });
+    badRequest(res, 'Error creando perfil', e.message);
   }
 });
 
 // List perfiles
 router.get('/', async (_req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM perfil ORDER BY id DESC');
-    res.json(rows);
+    const rows = await query('SELECT * FROM perfil ORDER BY id DESC');
+    res.json(Array.isArray(rows) ? rows : [rows]);
   } catch (e) {
-    res.status(500).json({ message: e.message });
+    badRequest(res, 'Error listando perfiles', e.message);
   }
 });
 
 // Get by id
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM perfil WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ message: 'Perfil no encontrado' });
-    res.json(rows[0]);
+    const rows = await query('SELECT * FROM perfil WHERE id = ?', [req.params.id]);
+    const perfil = Array.isArray(rows) ? rows[0] : rows;
+    if (!perfil) return notFound(res, 'Perfil');
+    res.json(perfil);
   } catch (e) {
-    res.status(500).json({ message: e.message });
+    badRequest(res, 'Error obteniendo perfil', e.message);
   }
 });
 
@@ -47,27 +49,32 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { usuario_id, objetivo, sexo, altura, estado } = req.body;
-    const [result] = await pool.execute(
-      `UPDATE perfil SET usuario_id = ?, objetivo = ?, sexo = ?, altura = ?, estado = ?
-       WHERE id = ?`,
-      [usuario_id, objetivo || null, sexo || null, altura || null, estado || null, req.params.id]
-    );
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Perfil no encontrado' });
-    const [rows] = await pool.execute('SELECT * FROM perfil WHERE id = ?', [req.params.id]);
-    res.json(rows[0]);
+    const target = await query('SELECT id FROM perfil WHERE id = ?', [req.params.id]);
+    if (!Array.isArray(target) || !target.length) return notFound(res, 'Perfil');
+    if (usuario_id) {
+      const usuario = await query('SELECT id FROM usuario WHERE id = ?', [usuario_id]);
+      if (!Array.isArray(usuario) || !usuario.length) return badRequest(res, 'usuario_id no existe');
+    }
+    const sql = `UPDATE perfil SET usuario_id = ?, objetivo = ?, sexo = ?, altura = ?, estado = ?
+                 WHERE id = ?`;
+    const params = [usuario_id || null, objetivo || null, sexo || null, altura || null, estado || null, req.params.id];
+    const result = await query(sql, params);
+    if (result.affectedRows === 0) return notFound(res, 'Perfil');
+    const perfil = await query('SELECT * FROM perfil WHERE id = ?', [req.params.id]);
+    res.json(Array.isArray(perfil) ? perfil[0] : perfil);
   } catch (e) {
-    res.status(500).json({ message: e.message });
+    badRequest(res, 'Error actualizando perfil', e.message);
   }
 });
 
 // Delete perfil
 router.delete('/:id', async (req, res) => {
   try {
-    const [result] = await pool.execute('DELETE FROM perfil WHERE id = ?', [req.params.id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Perfil no encontrado' });
+    const result = await query('DELETE FROM perfil WHERE id = ?', [req.params.id]);
+    if (result.affectedRows === 0) return notFound(res, 'Perfil');
     res.status(204).send();
   } catch (e) {
-    res.status(500).json({ message: e.message });
+    badRequest(res, 'Error eliminando perfil', e.message);
   }
 });
 
