@@ -1,0 +1,401 @@
+openapi: 3.0.3
+info:
+  title: VitalTrack API
+  version: 0.1.0
+  description: API para gestión de usuarios, perfiles, dispositivos y actividades.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: Health
+    description: Estado del servicio
+  - name: Usuarios
+    description: Gestión de usuarios
+  - name: Perfiles
+    description: Gestión de perfiles de usuario
+  - name: Dispositivos
+    description: Gestión de dispositivos vinculados
+  - name: Actividades
+    description: Registro y consulta de actividades
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Estado del servicio
+      responses:
+        '200':
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  db:
+                    type: string
+  /api/usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Usuario' }
+    post:
+      tags: [Usuarios]
+      summary: Crear usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreate'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/usuarios/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Datos del usuario, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Usuarios]
+      summary: Actualizar usuario
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UsuarioUpdate' }
+      responses:
+        '200': { description: Usuario actualizado, content: { application/json: { schema: { $ref: '#/components/schemas/Usuario' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Usuarios]
+      summary: Eliminar usuario
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/perfiles:
+    get:
+      tags: [Perfiles]
+      summary: Listar perfiles
+      responses:
+        '200':
+          description: Lista de perfiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Perfil' }
+    post:
+      tags: [Perfiles]
+      summary: Crear perfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PerfilCreate' }
+      responses:
+        '201': { description: Perfil creado, content: { application/json: { schema: { $ref: '#/components/schemas/Perfil' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/perfiles/{id}:
+    get:
+      tags: [Perfiles]
+      summary: Obtener perfil
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Perfil, content: { application/json: { schema: { $ref: '#/components/schemas/Perfil' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Perfiles]
+      summary: Actualizar perfil
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PerfilUpdate' }
+      responses:
+        '200': { description: Perfil actualizado, content: { application/json: { schema: { $ref: '#/components/schemas/Perfil' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Perfiles]
+      summary: Eliminar perfil
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/dispositivos:
+    get:
+      tags: [Dispositivos]
+      summary: Listar dispositivos
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Dispositivo' } } } } }
+    post:
+      tags: [Dispositivos]
+      summary: Crear dispositivo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DispositivoCreate' }
+      responses:
+        '201': { description: Dispositivo creado, content: { application/json: { schema: { $ref: '#/components/schemas/Dispositivo' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/dispositivos/{id}:
+    get:
+      tags: [Dispositivos]
+      summary: Obtener dispositivo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Dispositivo, content: { application/json: { schema: { $ref: '#/components/schemas/Dispositivo' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Dispositivos]
+      summary: Actualizar dispositivo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DispositivoUpdate' }
+      responses:
+        '200': { description: Dispositivo actualizado, content: { application/json: { schema: { $ref: '#/components/schemas/Dispositivo' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Dispositivos]
+      summary: Eliminar dispositivo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/actividades:
+    get:
+      tags: [Actividades]
+      summary: Listar actividades
+      parameters:
+        - in: query
+          name: usuario_id
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Actividad' } } } } }
+    post:
+      tags: [Actividades]
+      summary: Crear actividad
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActividadCreate' }
+      responses:
+        '201': { description: Actividad creada, content: { application/json: { schema: { $ref: '#/components/schemas/Actividad' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/actividades/{id}:
+    get:
+      tags: [Actividades]
+      summary: Obtener actividad
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Actividad, content: { application/json: { schema: { $ref: '#/components/schemas/Actividad' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Actividades]
+      summary: Actualizar actividad
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActividadUpdate' }
+      responses:
+        '200': { description: Actividad actualizada, content: { application/json: { schema: { $ref: '#/components/schemas/Actividad' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Actividades]
+      summary: Eliminar actividad
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  responses:
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflicto de datos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object }
+    Usuario:
+      type: object
+      properties:
+        id: { type: integer }
+        cedula: { type: string }
+        nombre: { type: string }
+        email: { type: string }
+        fecha_registro: { type: string, format: date-time }
+        fecha_nacimiento: { type: string, format: date }
+        consentimiento_privacidad: { type: boolean }
+    UsuarioCreate:
+      type: object
+      required: [nombre, email]
+      properties:
+        cedula: { type: string }
+        nombre: { type: string }
+        email: { type: string, format: email }
+        fecha_nacimiento: { type: string, format: date }
+        consentimiento_privacidad: { type: boolean }
+    UsuarioUpdate:
+      allOf:
+        - $ref: '#/components/schemas/UsuarioCreate'
+    Perfil:
+      type: object
+      properties:
+        id: { type: integer }
+        usuario_id: { type: integer }
+        objetivo: { type: string }
+        sexo: { type: string }
+        altura: { type: number }
+        estado: { type: string }
+    PerfilCreate:
+      type: object
+      required: [usuario_id]
+      properties:
+        usuario_id: { type: integer }
+        objetivo: { type: string }
+        sexo: { type: string }
+        altura: { type: number }
+        estado: { type: string }
+    PerfilUpdate:
+      allOf:
+        - $ref: '#/components/schemas/PerfilCreate'
+    Dispositivo:
+      type: object
+      properties:
+        id: { type: integer }
+        usuario_id: { type: integer }
+        serial: { type: string }
+        marca: { type: string }
+        modelo: { type: string }
+        fecha_vinculacion: { type: string, format: date }
+    DispositivoCreate:
+      type: object
+      required: [usuario_id, serial]
+      properties:
+        usuario_id: { type: integer }
+        serial: { type: string }
+        marca: { type: string }
+        modelo: { type: string }
+        fecha_vinculacion: { type: string, format: date }
+    DispositivoUpdate:
+      allOf:
+        - $ref: '#/components/schemas/DispositivoCreate'
+    Actividad:
+      type: object
+      properties:
+        id: { type: integer }
+        usuario_id: { type: integer }
+        tipo: { type: string }
+        hora_inicio: { type: string, format: date-time }
+        hora_fin: { type: string, format: date-time }
+        duracion_segundos: { type: integer }
+    ActividadCreate:
+      type: object
+      required: [usuario_id]
+      properties:
+        usuario_id: { type: integer }
+        tipo: { type: string }
+        hora_inicio: { type: string, format: date-time }
+        hora_fin: { type: string, format: date-time }
+        duracion_segundos: { type: integer }
+    ActividadUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ActividadCreate'

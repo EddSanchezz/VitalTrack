@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: vitaltrack-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: vitaltrack
+      MYSQL_USER: vt_user
+      MYSQL_PASSWORD: vt_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: vitaltrack-pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: vt_user
+      PMA_PASSWORD: vt_pass
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vitaltrack-backend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: vt_user
+      DB_PASSWORD: vt_pass
+      DB_NAME: vitaltrack
+      TZ: UTC
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+volumes:
+  db-data:

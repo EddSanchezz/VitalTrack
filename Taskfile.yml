@@ -1,0 +1,93 @@
+version: "3"
+
+vars:
+  API_URL: http://localhost:3000
+  CLIENT_URL: http://localhost:4200
+
+tasks:
+  # Frontend Commands
+  client:
+    desc: "Ejecuta el frontend Angular"
+    dir: frontend
+    cmds:
+      - npm install
+      - npm start
+
+  client:build:
+    desc: "Construye el frontend"
+    dir: frontend
+    cmds:
+      - npm install
+      - npm run build
+
+  client:test:
+    desc: "Tests del frontend"
+    dir: frontend
+    cmds:
+      - npm test
+
+  # Backend Commands  
+  api:
+    desc: "Ejecuta el backend con SQLite"
+    dir: backend
+    cmds:
+      - npm install
+      - task: api:setup-db
+      - node scripts/print-swagger.js
+      - node ./node_modules/nodemon/bin/nodemon.js --watch src --ext js --exec node src/server.js
+
+  api:setup-db:
+    desc: "Configura la base de datos"
+    dir: backend
+    cmds:
+      - powershell -c "if (!(Test-Path .env)) { 'PORT=3000' | Out-File -Encoding utf8 .env; 'DB_TYPE=sqlite' | Out-File -Encoding utf8 -Append .env; 'DB_FILE=./database.sqlite' | Out-File -Encoding utf8 -Append .env; 'TZ=UTC' | Out-File -Encoding utf8 -Append .env }"
+      - node scripts/setup-db.js
+
+  api:test:
+    desc: "Tests del API"
+    dir: backend
+    cmds:
+      - npm install
+      - npm test
+
+  api:reset:
+    desc: "Resetea la base de datos"
+    dir: backend
+    cmds:
+      - powershell -c "if (Test-Path database.sqlite) { Remove-Item database.sqlite }"
+      - task: api:setup-db
+
+  # Development Commands
+  dev:
+    desc: "Configuracion de desarrollo"
+    deps: [api:setup-db]
+    cmds:
+      - echo "Ejecuta en terminales separadas:"
+      - echo "Terminal 1 - task api"
+      - echo "Terminal 2 - task client"
+
+  # Health and Testing
+  health:
+    desc: "Health check de la API"
+    cmds:
+      - curl {{.API_URL}}/health
+
+  test:
+    desc: "Todos los tests"
+    cmds:
+      - task: api:test
+      - task: client:test
+
+  # Utility Commands
+  install:
+    desc: "Instala dependencias"
+    cmds:
+      - powershell -c "cd backend; npm install"
+      - powershell -c "cd frontend; npm install"
+
+  clean:
+    desc: "Limpia node_modules"
+    cmds:
+      - powershell -c "if (Test-Path backend/node_modules) { Remove-Item -Recurse -Force backend/node_modules }"
+      - powershell -c "if (Test-Path frontend/node_modules) { Remove-Item -Recurse -Force frontend/node_modules }"
+      - powershell -c "if (Test-Path frontend/dist) { Remove-Item -Recurse -Force frontend/dist }"
