@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { ping } from './db.js';
+import { ping, initializeDatabase } from './db.js';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import { readFileSync } from 'fs';
@@ -15,6 +15,9 @@ import actividadesRouter from './routes/actividades.js';
 import estadisticasRouter from './routes/estadisticas.js';
 
 dotenv.config();
+
+// Initialize database connection
+initializeDatabase();
 
 const app = express();
 
@@ -58,5 +61,6 @@ app.use((req, res) => res.status(404).json({ message: 'Not Found' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  // API VitalTrack iniciada
+  console.log(`✅ API VitalTrack corriendo en http://localhost:${PORT}`);
+  console.log(`📚 Documentación: http://localhost:${PORT}/api/docs`);
 });
