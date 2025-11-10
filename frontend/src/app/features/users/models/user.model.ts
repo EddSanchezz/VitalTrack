@@ -1,26 +1,9 @@
-export interface ConsentFlags {
-  analytics: boolean;
-  sharing: boolean;
-  export: boolean;
-}
-
-export type UserRole = 'user' | 'coach' | 'health_professional' | 'admin';
-
 export interface User {
   id: number;
-  name?: string;
-  nombre?: string;
+  nombre: string;
   email: string;
-  cedula?: string;
+  cedula?: string | null;
   consentimiento_privacidad?: boolean;
-  fecha_nacimiento?: string;
-  dob?: string; // ISO date YYYY-MM-DD
-  age: number;
-  sex?: 'M' | 'F' | 'O';
-  weight?: number; // kg
-  height?: number; // cm
-  role?: UserRole;
-  createdAt?: string; // ISO timestamp
-  updatedAt?: string; // ISO timestamp
-  //consent?: ConsentFlags;
+  fecha_nacimiento?: string | null; // YYYY-MM-DD
+  fecha_registro?: string; // ISO timestamp
 }

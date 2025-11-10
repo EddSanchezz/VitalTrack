@@ -64,8 +64,10 @@ export class UsersListComponent implements OnInit {
   edit(u: User) {
     this.form = {
       id: u.id,
-      nombre: u.nombre || u.name,
+      nombre: u.nombre,
       email: u.email,
+      cedula: u.cedula ?? '',
+      consentimiento_privacidad: u.consentimiento_privacidad ?? true
     };
   }
 

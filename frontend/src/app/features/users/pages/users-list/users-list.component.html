@@ -91,7 +91,7 @@
             <tbody>
                 <tr *ngFor="let u of users">
                     <td><span class="badge badge-primary">#{{ u.id }}</span></td>
-                    <td style="font-weight: 500;">{{ u.nombre || u.name }}</td>
+                    <td style="font-weight: 500;">{{ u.nombre }}</td>
                     <td>{{ u.email }}</td>
                     <td>
                         <span class="badge badge-success" *ngIf="u.consentimiento_privacidad">✓ Aceptado</span>

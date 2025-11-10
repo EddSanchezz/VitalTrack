@@ -24,25 +24,31 @@ export class UsersEditComponent implements OnInit {
   ngOnInit(): void {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
     this.form = this.fb.group({
-      name: ['', Validators.required],
+      nombre: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      sport: ['', Validators.required]
+      cedula: [''],
+      consentimiento_privacidad: [true]
     });
 
     if (this.id) {
       this.svc.get(this.id).subscribe({
-        next: (user: User) => this.form.patchValue(user),
+        next: (user: User) => this.form.patchValue({
+          nombre: user.nombre,
+          email: user.email,
+          cedula: user.cedula ?? '',
+          consentimiento_privacidad: user.consentimiento_privacidad ?? true
+        }),
         error: (err: any) => console.error('Error loading user:', err)
       });
     }
   }
 
   save(): void {
-    const user = this.form.value as User;
+    const payload = this.form.value;
     if (this.id) {
-      this.svc.update(this.id, user).subscribe(() => this.router.navigate(['/']));
+      this.svc.update(this.id, payload).subscribe(() => this.router.navigate(['/home/usuarios']));
     } else {
-      this.svc.create(user).subscribe(() => this.router.navigate(['/']));
+      this.svc.create(payload).subscribe(() => this.router.navigate(['/home/usuarios']));
     }
   }
 }

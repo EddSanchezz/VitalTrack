@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: VitalTrack API
   version: 0.1.0
-  description: API para gestión de usuarios, perfiles, dispositivos y actividades.
+  description: API para gestión de usuarios, perfiles, dispositivos, actividades y estadísticas.
 servers:
   - url: http://localhost:3000
 tags:
@@ -16,6 +16,8 @@ tags:
     description: Gestión de dispositivos vinculados
   - name: Actividades
     description: Registro y consulta de actividades
+  - name: Estadisticas
+    description: Métricas agregadas del sistema y por usuario
 paths:
   /health:
     get:
@@ -283,6 +285,74 @@ paths:
           schema: { type: integer }
       responses:
         '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/estadisticas:
+    get:
+      tags: [Estadisticas]
+      summary: Resumen de métricas
+      description: Retorna totales, actividades por tipo, promedio de duración, dispositivos por usuario y últimas actividades.
+      responses:
+        '200':
+          description: Resumen del sistema
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totals:
+                    type: object
+                    properties:
+                      usuarios: { type: integer }
+                      perfiles: { type: integer }
+                      dispositivos: { type: integer }
+                      actividades: { type: integer }
+                  actividadesPorTipo:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tipo: { type: string }
+                        total: { type: integer }
+                  promedioDuracionSegundos: { type: integer, nullable: true }
+                  dispositivosPorUsuario:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        usuario_id: { type: integer }
+                        total: { type: integer }
+                  recientes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Actividad'
+  /api/estadisticas/usuario/{id}:
+    get:
+      tags: [Estadisticas]
+      summary: Estadísticas por usuario
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Métricas por usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario_id: { type: integer }
+                  dispositivos: { type: integer }
+                  actividades: { type: integer }
+                  duracionTotalSegundos: { type: integer }
+                  actividadesPorTipo:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tipo: { type: string }
+                        total: { type: integer }
         '404': { $ref: '#/components/responses/NotFound' }
 components:
   responses:

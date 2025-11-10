@@ -150,11 +150,11 @@ export class UsersService {
     return this.http.get<User>(`${this.base}/${id}`);
   }
 
-  create(newUser: Partial<User & { cedula?: string; consentimiento_privacidad?: boolean }>): Observable<User> {
+  create(newUser: Partial<User & { cedula?: string | null; consentimiento_privacidad?: boolean }>): Observable<User> {
     return this.http.post<User>(this.base, newUser);
   }
 
-  update(id: number, updated: Partial<User>): Observable<User> {
+  update(id: number, updated: Partial<User & { cedula?: string | null; consentimiento_privacidad?: boolean }>): Observable<User> {
     return this.http.put<User>(`${this.base}/${id}`, updated);
   }
 
