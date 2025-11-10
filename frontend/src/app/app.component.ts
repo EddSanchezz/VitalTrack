@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
+interface Notificacion {
+  id: number;
+  tipo: 'success' | 'error' | 'warning' | 'info';
+  titulo: string;
+  mensaje: string;
+  closing?: boolean;
+}
+
 interface Usuario {
   cedula: string;
   nombre: string;
@@ -28,6 +36,24 @@ interface UsuarioResponse {
   template: `
     <div class="container">
       <h1>VitalTrack - Sistema de Gestión</h1>
+      
+      <!-- Sistema de notificaciones flotantes -->
+      <div class="notificacion-container">
+        <div *ngFor="let notif of notificaciones" 
+             [class]="'notificacion ' + notif.tipo + (notif.closing ? ' closing' : '')">
+          <div class="notificacion-icono">
+            <span *ngIf="notif.tipo === 'success'">✓</span>
+            <span *ngIf="notif.tipo === 'error'">✕</span>
+            <span *ngIf="notif.tipo === 'warning'">⚠</span>
+            <span *ngIf="notif.tipo === 'info'">ℹ</span>
+          </div>
+          <div class="notificacion-contenido">
+            <div class="notificacion-titulo">{{ notif.titulo }}</div>
+            <div class="notificacion-mensaje">{{ notif.mensaje }}</div>
+          </div>
+          <button class="notificacion-cerrar" (click)="cerrarNotificacion(notif.id)">×</button>
+        </div>
+      </div>
       
       <div class="tabs">
         <button 
@@ -677,6 +703,11 @@ export class AppComponent implements OnInit {
   cargandoUsuarios: boolean = false;
   usuarios: UsuarioResponse[] = [];
   private readonly API_URL = 'http://localhost:4000';
+  
+  // Sistema de notificaciones
+  notificaciones: Notificacion[] = [];
+  private notificacionIdCounter = 0;
+  
   // Perfiles state
   cargandoPerfiles: boolean = false;
   perfiles: any[] = [];
@@ -741,8 +772,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar usuarios:', error);
-        this.mensaje = '❌ Error cargando usuarios: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoUsuarios = false;
       }
     });
@@ -757,8 +788,7 @@ export class AppComponent implements OnInit {
     this.http.post(`${this.API_URL}/api/usuarios`, this.nuevoUsuario).subscribe({
       next: (response) => {
         console.log('Usuario creado exitosamente:', response);
-        this.mensaje = '✅ Usuario creado exitosamente';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Usuario creado', `El usuario ${this.nuevoUsuario.nombre} ha sido registrado exitosamente.`);
         this.enviando = false;
         // Limpiar formulario
         this.nuevoUsuario = {
@@ -773,8 +803,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al crear usuario:', error);
-        this.mensaje = '❌ Error al crear usuario: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.enviando = false;
       }
     });
@@ -815,14 +845,12 @@ export class AppComponent implements OnInit {
     if (this.editandoId !== id) return;
     // Validaciones básicas
     if (!this.editBuffer.nombre || !this.editBuffer.email) {
-      this.mensaje = '❌ Nombre y Email son obligatorios';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campos requeridos', 'Nombre y Email son obligatorios para actualizar el usuario.');
       return;
     }
     const emailPattern = /.+@.+\..+/;
     if (!emailPattern.test(this.editBuffer.email)) {
-      this.mensaje = '❌ Formato de email inválido';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Email inválido', 'El formato del email no es válido. Ejemplo: usuario@dominio.com');
       return;
     }
     this.guardando = true;
@@ -834,8 +862,7 @@ export class AppComponent implements OnInit {
       consentimiento_privacidad: this.editBuffer.consentimiento_privacidad
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Usuario actualizado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Usuario actualizado', `Los cambios en ${this.editBuffer.nombre} se guardaron correctamente.`);
         this.guardando = false;
         this.editandoId = null;
         this.editBuffer = {};
@@ -843,8 +870,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error actualizando usuario:', error);
-        this.mensaje = '❌ Error al actualizar: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardando = false;
       }
     });
@@ -854,11 +881,9 @@ export class AppComponent implements OnInit {
     const confirmado = confirm('¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.');
     if (!confirmado) return;
     this.guardando = true;
-    this.mensaje = '';
-    this.mensajeError = false;
     this.http.delete(`${this.API_URL}/api/usuarios/${id}`).subscribe({
       next: () => {
-        this.mensaje = '✅ Usuario eliminado';
+        this.mostrarNotificacion('success', 'Usuario eliminado', 'El usuario ha sido eliminado del sistema.');
         this.guardando = false;
         // Si se estaba editando esta fila, cancelar
         if (this.editandoId === id) this.cancelarEdicion();
@@ -1230,5 +1255,56 @@ export class AppComponent implements OnInit {
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // -------- SISTEMA DE NOTIFICACIONES ---------
+  mostrarNotificacion(tipo: 'success' | 'error' | 'warning' | 'info', titulo: string, mensaje: string): void {
+    const id = ++this.notificacionIdCounter;
+    const notif: Notificacion = { id, tipo, titulo, mensaje };
+    this.notificaciones.push(notif);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+      this.cerrarNotificacion(id);
+    }, 5000);
+  }
+
+  cerrarNotificacion(id: number): void {
+    const notif = this.notificaciones.find(n => n.id === id);
+    if (notif) {
+      notif.closing = true;
+      setTimeout(() => {
+        this.notificaciones = this.notificaciones.filter(n => n.id !== id);
+      }, 300);
+    }
+  }
+
+  // Helper para parsear errores del backend
+  private obtenerMensajeError(error: any): { titulo: string, mensaje: string } {
+    let titulo = 'Error en la operación';
+    let mensaje = 'Ocurrió un error inesperado.';
+
+    if (error.status === 0) {
+      titulo = 'Error de conexión';
+      mensaje = 'No se puede conectar con el servidor. Verifica que el backend esté ejecutándose en el puerto 4000.';
+    } else if (error.status === 400) {
+      titulo = 'Datos inválidos';
+      mensaje = error.error?.message || 'Los datos enviados no son válidos. Revisa los campos del formulario.';
+    } else if (error.status === 404) {
+      titulo = 'No encontrado';
+      mensaje = error.error?.message || 'El recurso solicitado no existe.';
+    } else if (error.status === 409) {
+      titulo = 'Conflicto';
+      mensaje = error.error?.message || 'Ya existe un registro con esos datos. Revisa campos únicos como email o serial.';
+    } else if (error.status === 500) {
+      titulo = 'Error del servidor';
+      mensaje = 'El servidor encontró un error al procesar la solicitud. Contacta al administrador.';
+    } else if (error.error?.message) {
+      mensaje = error.error.message;
+    } else if (error.message) {
+      mensaje = error.message;
+    }
+
+    return { titulo, mensaje };
   }
 }
