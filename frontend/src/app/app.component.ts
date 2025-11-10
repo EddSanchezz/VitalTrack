@@ -154,20 +154,56 @@ interface UsuarioResponse {
                   <th>Fecha Nacimiento</th>
                   <th>Fecha Registro</th>
                   <th>Privacidad</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let usuario of usuarios">
                   <td>{{ usuario.id }}</td>
-                  <td>{{ usuario.cedula }}</td>
-                  <td>{{ usuario.nombre }}</td>
-                  <td>{{ usuario.email }}</td>
-                  <td>{{ usuario.fecha_nacimiento }}</td>
+                  <td>
+                    <ng-container *ngIf="editandoId === usuario.id; else cedulaView">
+                      <input class="edit-input" [(ngModel)]="editBuffer.cedula" />
+                    </ng-container>
+                    <ng-template #cedulaView>{{ usuario.cedula }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoId === usuario.id; else nombreView">
+                      <input class="edit-input" [(ngModel)]="editBuffer.nombre" />
+                    </ng-container>
+                    <ng-template #nombreView>{{ usuario.nombre }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoId === usuario.id; else emailView">
+                      <input class="edit-input" type="email" [(ngModel)]="editBuffer.email" />
+                    </ng-container>
+                    <ng-template #emailView>{{ usuario.email }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoId === usuario.id; else nacView">
+                      <input class="edit-input" type="date" [(ngModel)]="editBuffer.fecha_nacimiento" />
+                    </ng-container>
+                    <ng-template #nacView>{{ usuario.fecha_nacimiento }}</ng-template>
+                  </td>
                   <td>{{ formatearFecha(usuario.fecha_registro) }}</td>
                   <td>
-                    <span class="badge" [class.badge-success]="usuario.consentimiento_privacidad === 1" [class.badge-warning]="usuario.consentimiento_privacidad !== 1">
-                      {{ usuario.consentimiento_privacidad === 1 ? '✓' : '✗' }}
-                    </span>
+                    <ng-container *ngIf="editandoId === usuario.id; else privacidadView">
+                      <input type="checkbox" [(ngModel)]="editBuffer.consentimiento_privacidad" />
+                    </ng-container>
+                    <ng-template #privacidadView>
+                      <span class="badge" [class.badge-success]="usuario.consentimiento_privacidad === 1" [class.badge-warning]="usuario.consentimiento_privacidad !== 1">
+                        {{ usuario.consentimiento_privacidad === 1 ? '✓' : '✗' }}
+                      </span>
+                    </ng-template>
+                  </td>
+                  <td class="acciones">
+                    <ng-container *ngIf="editandoId === usuario.id; else accionesNormales">
+                      <button class="btn-mini btn-save" (click)="guardarEdicion(usuario.id)" [disabled]="guardando">Guardar</button>
+                      <button class="btn-mini btn-cancel" (click)="cancelarEdicion()" [disabled]="guardando">Cancelar</button>
+                    </ng-container>
+                    <ng-template #accionesNormales>
+                      <button class="btn-mini" (click)="iniciarEdicion(usuario)">Editar</button>
+                      <button class="btn-mini btn-cancel" (click)="eliminarUsuario(usuario.id)" [disabled]="guardando">Eliminar</button>
+                    </ng-template>
                   </td>
                 </tr>
               </tbody>
@@ -205,6 +241,9 @@ export class AppComponent implements OnInit {
   cargandoUsuarios: boolean = false;
   usuarios: UsuarioResponse[] = [];
   private readonly API_URL = 'http://localhost:4000';
+  editandoId: number | null = null;
+  editBuffer: any = {};
+  guardando: boolean = false;
 
   nuevoUsuario: Usuario = {
     cedula: '',
@@ -286,6 +325,87 @@ export class AppComponent implements OnInit {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
+    });
+  }
+
+  iniciarEdicion(usuario: UsuarioResponse): void {
+    this.mensaje = '';
+    this.mensajeError = false;
+    this.editandoId = usuario.id;
+    this.editBuffer = {
+      cedula: usuario.cedula || '',
+      nombre: usuario.nombre || '',
+      email: usuario.email || '',
+      fecha_nacimiento: usuario.fecha_nacimiento || '',
+      consentimiento_privacidad: usuario.consentimiento_privacidad === 1
+    };
+  }
+
+  cancelarEdicion(): void {
+    this.editandoId = null;
+    this.editBuffer = {};
+  }
+
+  guardarEdicion(id: number): void {
+    if (this.editandoId !== id) return;
+    // Validaciones básicas
+    if (!this.editBuffer.nombre || !this.editBuffer.email) {
+      this.mensaje = '❌ Nombre y Email son obligatorios';
+      this.mensajeError = true;
+      return;
+    }
+    const emailPattern = /.+@.+\..+/;
+    if (!emailPattern.test(this.editBuffer.email)) {
+      this.mensaje = '❌ Formato de email inválido';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardando = true;
+    this.http.put(`${this.API_URL}/api/usuarios/${id}`, {
+      cedula: this.editBuffer.cedula || null,
+      nombre: this.editBuffer.nombre,
+      email: this.editBuffer.email,
+      fecha_nacimiento: this.editBuffer.fecha_nacimiento || null,
+      consentimiento_privacidad: this.editBuffer.consentimiento_privacidad
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Usuario actualizado';
+        this.mensajeError = false;
+        this.guardando = false;
+        this.editandoId = null;
+        this.editBuffer = {};
+        this.cargarUsuarios();
+      },
+      error: (error) => {
+        console.error('Error actualizando usuario:', error);
+        this.mensaje = '❌ Error al actualizar: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardando = false;
+      }
+    });
+  }
+
+  eliminarUsuario(id: number): void {
+    const confirmado = confirm('¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.');
+    if (!confirmado) return;
+    this.guardando = true;
+    this.mensaje = '';
+    this.mensajeError = false;
+    this.http.delete(`${this.API_URL}/api/usuarios/${id}`).subscribe({
+      next: () => {
+        this.mensaje = '✅ Usuario eliminado';
+        this.guardando = false;
+        // Si se estaba editando esta fila, cancelar
+        if (this.editandoId === id) this.cancelarEdicion();
+        // Refrescar lista
+        this.cargarUsuarios();
+      },
+      error: (error) => {
+        console.error('Error eliminando usuario:', error);
+        this.mensaje = '❌ Error al eliminar: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardando = false;
+      }
     });
   }
 }

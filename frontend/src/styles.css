@@ -218,6 +218,41 @@ h1 {
   color: #555;
 }
 
+/* Inputs de edición inline */
+.edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.edit-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52,152,219,0.15);
+}
+
+.acciones {
+  white-space: nowrap;
+}
+.btn-mini {
+  background: #3498db;
+  border: none;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 4px;
+  transition: background .25s;
+}
+.btn-mini:hover { background: #2980b9; }
+.btn-mini:disabled { background:#95a5a6; cursor: not-allowed; }
+.btn-save { background:#27ae60; }
+.btn-save:hover { background:#1e8449; }
+.btn-cancel { background:#e74c3c; }
+.btn-cancel:hover { background:#c0392b; }
+
 .usuarios-table tbody tr:hover {
   background-color: #f8f9fa;
 }
