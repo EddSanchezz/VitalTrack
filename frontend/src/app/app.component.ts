@@ -370,14 +370,300 @@ interface UsuarioResponse {
 
       <div class="panel" *ngIf="activeTab === 'actividades'">
         <h2>Registro de Actividades</h2>
-        <p>Visualiza y gestiona las actividades físicas registradas.</p>
-        <p>Pasos, distancia, calorías, duración y más métricas de actividad.</p>
+        <div class="usuarios-container">
+          <!-- Formulario Actividad -->
+          <div class="form-section">
+            <h3>Crear Actividad</h3>
+            <form (ngSubmit)="crearActividad()" class="user-form">
+              <div class="form-group">
+                <label for="act_usuario_id">Usuario ID *</label>
+                <input 
+                  type="number" 
+                  id="act_usuario_id" 
+                  [(ngModel)]="nuevaActividad.usuario_id" 
+                  name="act_usuario_id"
+                  required
+                  placeholder="ID del usuario"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="tipo">Tipo</label>
+                <input 
+                  type="text" 
+                  id="tipo" 
+                  [(ngModel)]="nuevaActividad.tipo" 
+                  name="tipo"
+                  placeholder="p.ej. Correr, Caminar"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="hora_inicio">Hora Inicio</label>
+                <input 
+                  type="datetime-local" 
+                  id="hora_inicio" 
+                  [(ngModel)]="nuevaActividad.hora_inicio" 
+                  name="hora_inicio"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="hora_fin">Hora Fin</label>
+                <input 
+                  type="datetime-local" 
+                  id="hora_fin" 
+                  [(ngModel)]="nuevaActividad.hora_fin" 
+                  name="hora_fin"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="duracion_segundos">Duración (segundos)</label>
+                <input 
+                  type="number" 
+                  id="duracion_segundos" 
+                  [(ngModel)]="nuevaActividad.duracion_segundos" 
+                  name="duracion_segundos"
+                  placeholder="Opcional si se provee inicio/fin"
+                />
+              </div>
+
+              <button type="submit" class="btn-submit" [disabled]="guardandoActividad || !nuevaActividad.usuario_id">
+                {{ guardandoActividad ? 'Creando...' : 'Crear Actividad' }}
+              </button>
+            </form>
+
+            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
+              {{ mensaje }}
+            </div>
+          </div>
+
+          <!-- Tabla de Actividades -->
+          <div class="table-section">
+            <div class="list-header" style="display:flex;align-items:center;gap:8px;">
+              <h3 style="margin:0;flex:1;">Lista de Actividades</h3>
+              <button class="btn-mini" (click)="cargarActividades()" [disabled]="cargandoActividades">🔄</button>
+            </div>
+
+            <div *ngIf="cargandoActividades" class="loading">
+              Cargando actividades...
+            </div>
+
+            <div *ngIf="!cargandoActividades && actividades.length === 0" class="empty-state">
+              No hay actividades registradas
+            </div>
+
+            <table *ngIf="!cargandoActividades && actividades.length > 0" class="usuarios-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario ID</th>
+                  <th>Tipo</th>
+                  <th>Hora Inicio</th>
+                  <th>Hora Fin</th>
+                  <th>Duración (seg)</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of actividades">
+                  <td>{{ a.id }}</td>
+                  <td>
+                    <ng-container *ngIf="editandoActividadId === a.id; else actUsuarioIdView">
+                      <input class="edit-input" type="number" [(ngModel)]="editBufferActividad.usuario_id" />
+                    </ng-container>
+                    <ng-template #actUsuarioIdView>{{ a.usuario_id }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoActividadId === a.id; else tipoView">
+                      <input class="edit-input" [(ngModel)]="editBufferActividad.tipo" />
+                    </ng-container>
+                    <ng-template #tipoView>{{ a.tipo || '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoActividadId === a.id; else inicioView">
+                      <input class="edit-input" type="datetime-local" [(ngModel)]="editBufferActividad.hora_inicio" />
+                    </ng-container>
+                    <ng-template #inicioView>{{ a.hora_inicio ? formatearFecha(a.hora_inicio) : '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoActividadId === a.id; else finView">
+                      <input class="edit-input" type="datetime-local" [(ngModel)]="editBufferActividad.hora_fin" />
+                    </ng-container>
+                    <ng-template #finView>{{ a.hora_fin ? formatearFecha(a.hora_fin) : '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoActividadId === a.id; else duracionView">
+                      <input class="edit-input" type="number" [(ngModel)]="editBufferActividad.duracion_segundos" />
+                    </ng-container>
+                    <ng-template #duracionView>{{ a.duracion_segundos ?? '-' }}</ng-template>
+                  </td>
+                  <td class="acciones">
+                    <ng-container *ngIf="editandoActividadId === a.id; else accionesActividadNormales">
+                      <button class="btn-mini btn-save" (click)="guardarActividad(a.id)" [disabled]="guardandoActividad">Guardar</button>
+                      <button class="btn-mini btn-cancel" (click)="cancelarEdicionActividad()" [disabled]="guardandoActividad">Cancelar</button>
+                    </ng-container>
+                    <ng-template #accionesActividadNormales>
+                      <button class="btn-mini" (click)="iniciarEdicionActividad(a)" [disabled]="guardandoActividad">Editar</button>
+                      <button class="btn-mini btn-cancel" (click)="eliminarActividad(a.id)" [disabled]="guardandoActividad">Eliminar</button>
+                    </ng-template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="panel" *ngIf="activeTab === 'dispositivos'">
         <h2>Dispositivos Conectados</h2>
-        <p>Administra los dispositivos wearables vinculados al sistema.</p>
-        <p>Smartwatches, pulseras de actividad y otros dispositivos IoT.</p>
+        <div class="usuarios-container">
+          <!-- Formulario Dispositivo -->
+          <div class="form-section">
+            <h3>Crear Dispositivo</h3>
+            <form (ngSubmit)="crearDispositivo()" class="user-form">
+              <div class="form-group">
+                <label for="disp_usuario_id">Usuario ID *</label>
+                <input 
+                  type="number" 
+                  id="disp_usuario_id" 
+                  [(ngModel)]="nuevoDispositivo.usuario_id" 
+                  name="disp_usuario_id"
+                  required
+                  placeholder="ID del usuario"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="serial">Serial *</label>
+                <input 
+                  type="text" 
+                  id="serial" 
+                  [(ngModel)]="nuevoDispositivo.serial" 
+                  name="serial"
+                  required
+                  placeholder="Número de serie único"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="marca">Marca</label>
+                <input 
+                  type="text" 
+                  id="marca" 
+                  [(ngModel)]="nuevoDispositivo.marca" 
+                  name="marca"
+                  placeholder="p.ej. Fitbit, Garmin"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="modelo">Modelo</label>
+                <input 
+                  type="text" 
+                  id="modelo" 
+                  [(ngModel)]="nuevoDispositivo.modelo" 
+                  name="modelo"
+                  placeholder="p.ej. Charge 5"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="fecha_vinculacion">Fecha Vinculación</label>
+                <input 
+                  type="date" 
+                  id="fecha_vinculacion" 
+                  [(ngModel)]="nuevoDispositivo.fecha_vinculacion" 
+                  name="fecha_vinculacion"
+                />
+              </div>
+
+              <button type="submit" class="btn-submit" [disabled]="guardandoDispositivo || !nuevoDispositivo.usuario_id || !nuevoDispositivo.serial">
+                {{ guardandoDispositivo ? 'Creando...' : 'Crear Dispositivo' }}
+              </button>
+            </form>
+
+            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
+              {{ mensaje }}
+            </div>
+          </div>
+
+          <!-- Tabla de Dispositivos -->
+          <div class="table-section">
+            <div class="list-header" style="display:flex;align-items:center;gap:8px;">
+              <h3 style="margin:0;flex:1;">Lista de Dispositivos</h3>
+              <button class="btn-mini" (click)="cargarDispositivos()" [disabled]="cargandoDispositivos">🔄</button>
+            </div>
+
+            <div *ngIf="cargandoDispositivos" class="loading">
+              Cargando dispositivos...
+            </div>
+
+            <div *ngIf="!cargandoDispositivos && dispositivos.length === 0" class="empty-state">
+              No hay dispositivos registrados
+            </div>
+
+            <table *ngIf="!cargandoDispositivos && dispositivos.length > 0" class="usuarios-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario ID</th>
+                  <th>Serial</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Fecha Vinculación</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of dispositivos">
+                  <td>{{ d.id }}</td>
+                  <td>
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else dispUsuarioIdView">
+                      <input class="edit-input" type="number" [(ngModel)]="editBufferDispositivo.usuario_id" />
+                    </ng-container>
+                    <ng-template #dispUsuarioIdView>{{ d.usuario_id }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else serialView">
+                      <input class="edit-input" [(ngModel)]="editBufferDispositivo.serial" />
+                    </ng-container>
+                    <ng-template #serialView>{{ d.serial }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else marcaView">
+                      <input class="edit-input" [(ngModel)]="editBufferDispositivo.marca" />
+                    </ng-container>
+                    <ng-template #marcaView>{{ d.marca || '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else modeloView">
+                      <input class="edit-input" [(ngModel)]="editBufferDispositivo.modelo" />
+                    </ng-container>
+                    <ng-template #modeloView>{{ d.modelo || '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else fechaVincView">
+                      <input class="edit-input" type="date" [(ngModel)]="editBufferDispositivo.fecha_vinculacion" />
+                    </ng-container>
+                    <ng-template #fechaVincView>{{ d.fecha_vinculacion || '-' }}</ng-template>
+                  </td>
+                  <td class="acciones">
+                    <ng-container *ngIf="editandoDispositivoId === d.id; else accionesDispositivoNormales">
+                      <button class="btn-mini btn-save" (click)="guardarDispositivo(d.id)" [disabled]="guardandoDispositivo">Guardar</button>
+                      <button class="btn-mini btn-cancel" (click)="cancelarEdicionDispositivo()" [disabled]="guardandoDispositivo">Cancelar</button>
+                    </ng-container>
+                    <ng-template #accionesDispositivoNormales>
+                      <button class="btn-mini" (click)="iniciarEdicionDispositivo(d)" [disabled]="guardandoDispositivo">Editar</button>
+                      <button class="btn-mini btn-cancel" (click)="eliminarDispositivo(d.id)" [disabled]="guardandoDispositivo">Eliminar</button>
+                    </ng-template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -402,6 +688,22 @@ export class AppComponent implements OnInit {
   editBuffer: any = {};
   guardando: boolean = false;
 
+  // Actividades state
+  cargandoActividades: boolean = false;
+  actividades: any[] = [];
+  nuevaActividad: any = { usuario_id: '', tipo: '', hora_inicio: '', hora_fin: '', duracion_segundos: '' };
+  editandoActividadId: number | null = null;
+  editBufferActividad: any = {};
+  guardandoActividad: boolean = false;
+
+  // Dispositivos state
+  cargandoDispositivos: boolean = false;
+  dispositivos: any[] = [];
+  nuevoDispositivo: any = { usuario_id: '', serial: '', marca: '', modelo: '', fecha_vinculacion: '' };
+  editandoDispositivoId: number | null = null;
+  editBufferDispositivo: any = {};
+  guardandoDispositivo: boolean = false;
+
   nuevoUsuario: Usuario = {
     cedula: '',
     nombre: '',
@@ -422,6 +724,10 @@ export class AppComponent implements OnInit {
       this.cargarUsuarios();
     } else if (tab === 'perfiles') {
       this.cargarPerfiles();
+    } else if (tab === 'actividades') {
+      this.cargarActividades();
+    } else if (tab === 'dispositivos') {
+      this.cargarDispositivos();
     }
   }
 
@@ -681,5 +987,248 @@ export class AppComponent implements OnInit {
         this.guardandoPerfil = false;
       }
     });
+  }
+
+  // -------- ACTIVIDADES ---------
+  cargarActividades(): void {
+    this.cargandoActividades = true;
+    this.http.get<any[]>(`${this.API_URL}/api/actividades`).subscribe({
+      next: (rows) => {
+        this.actividades = rows;
+        this.cargandoActividades = false;
+      },
+      error: (error) => {
+        console.error('Error cargando actividades:', error);
+        this.mensaje = '❌ Error cargando actividades: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.cargandoActividades = false;
+      }
+    });
+  }
+
+  crearActividad(): void {
+    if (!this.nuevaActividad.usuario_id) {
+      this.mensaje = '❌ usuario_id es obligatorio';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoActividad = true;
+    this.http.post(`${this.API_URL}/api/actividades`, {
+      usuario_id: Number(this.nuevaActividad.usuario_id),
+      tipo: this.nuevaActividad.tipo || null,
+      hora_inicio: this.nuevaActividad.hora_inicio || null,
+      hora_fin: this.nuevaActividad.hora_fin || null,
+      duracion_segundos: this.nuevaActividad.duracion_segundos ? Number(this.nuevaActividad.duracion_segundos) : null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Actividad creada';
+        this.mensajeError = false;
+        this.guardandoActividad = false;
+        this.nuevaActividad = { usuario_id: '', tipo: '', hora_inicio: '', hora_fin: '', duracion_segundos: '' };
+        this.cargarActividades();
+      },
+      error: (error) => {
+        console.error('Error creando actividad:', error);
+        this.mensaje = '❌ Error creando actividad: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoActividad = false;
+      }
+    });
+  }
+
+  iniciarEdicionActividad(actividad: any): void {
+    this.editandoActividadId = actividad.id;
+    this.editBufferActividad = {
+      usuario_id: actividad.usuario_id,
+      tipo: actividad.tipo || '',
+      hora_inicio: actividad.hora_inicio ? this.formatDateTime(actividad.hora_inicio) : '',
+      hora_fin: actividad.hora_fin ? this.formatDateTime(actividad.hora_fin) : '',
+      duracion_segundos: actividad.duracion_segundos ?? ''
+    };
+  }
+
+  cancelarEdicionActividad(): void {
+    this.editandoActividadId = null;
+    this.editBufferActividad = {};
+  }
+
+  guardarActividad(actividadId: number): void {
+    if (this.editandoActividadId !== actividadId) return;
+    if (!this.editBufferActividad.usuario_id) {
+      this.mensaje = '❌ usuario_id es obligatorio';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoActividad = true;
+    this.http.put(`${this.API_URL}/api/actividades/${actividadId}`, {
+      usuario_id: Number(this.editBufferActividad.usuario_id),
+      tipo: this.editBufferActividad.tipo || null,
+      hora_inicio: this.editBufferActividad.hora_inicio || null,
+      hora_fin: this.editBufferActividad.hora_fin || null,
+      duracion_segundos: this.editBufferActividad.duracion_segundos !== '' ? Number(this.editBufferActividad.duracion_segundos) : null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Actividad actualizada';
+        this.mensajeError = false;
+        this.guardandoActividad = false;
+        this.cancelarEdicionActividad();
+        this.cargarActividades();
+      },
+      error: (error) => {
+        console.error('Error actualizando actividad:', error);
+        this.mensaje = '❌ Error actualizando actividad: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoActividad = false;
+      }
+    });
+  }
+
+  eliminarActividad(actividadId: number): void {
+    const confirmado = confirm('¿Eliminar esta actividad?');
+    if (!confirmado) return;
+    this.guardandoActividad = true;
+    this.http.delete(`${this.API_URL}/api/actividades/${actividadId}`).subscribe({
+      next: () => {
+        this.mensaje = '✅ Actividad eliminada';
+        this.mensajeError = false;
+        this.guardandoActividad = false;
+        if (this.editandoActividadId === actividadId) this.cancelarEdicionActividad();
+        this.cargarActividades();
+      },
+      error: (error) => {
+        console.error('Error eliminando actividad:', error);
+        this.mensaje = '❌ Error eliminando actividad: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoActividad = false;
+      }
+    });
+  }
+
+  // -------- DISPOSITIVOS ---------
+  cargarDispositivos(): void {
+    this.cargandoDispositivos = true;
+    this.http.get<any[]>(`${this.API_URL}/api/dispositivos`).subscribe({
+      next: (rows) => {
+        this.dispositivos = rows;
+        this.cargandoDispositivos = false;
+      },
+      error: (error) => {
+        console.error('Error cargando dispositivos:', error);
+        this.mensaje = '❌ Error cargando dispositivos: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.cargandoDispositivos = false;
+      }
+    });
+  }
+
+  crearDispositivo(): void {
+    if (!this.nuevoDispositivo.usuario_id || !this.nuevoDispositivo.serial) {
+      this.mensaje = '❌ usuario_id y serial son obligatorios';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoDispositivo = true;
+    this.http.post(`${this.API_URL}/api/dispositivos`, {
+      usuario_id: Number(this.nuevoDispositivo.usuario_id),
+      serial: this.nuevoDispositivo.serial,
+      marca: this.nuevoDispositivo.marca || null,
+      modelo: this.nuevoDispositivo.modelo || null,
+      fecha_vinculacion: this.nuevoDispositivo.fecha_vinculacion || null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Dispositivo creado';
+        this.mensajeError = false;
+        this.guardandoDispositivo = false;
+        this.nuevoDispositivo = { usuario_id: '', serial: '', marca: '', modelo: '', fecha_vinculacion: '' };
+        this.cargarDispositivos();
+      },
+      error: (error) => {
+        console.error('Error creando dispositivo:', error);
+        this.mensaje = '❌ Error creando dispositivo: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoDispositivo = false;
+      }
+    });
+  }
+
+  iniciarEdicionDispositivo(dispositivo: any): void {
+    this.editandoDispositivoId = dispositivo.id;
+    this.editBufferDispositivo = {
+      usuario_id: dispositivo.usuario_id,
+      serial: dispositivo.serial || '',
+      marca: dispositivo.marca || '',
+      modelo: dispositivo.modelo || '',
+      fecha_vinculacion: dispositivo.fecha_vinculacion || ''
+    };
+  }
+
+  cancelarEdicionDispositivo(): void {
+    this.editandoDispositivoId = null;
+    this.editBufferDispositivo = {};
+  }
+
+  guardarDispositivo(dispositivoId: number): void {
+    if (this.editandoDispositivoId !== dispositivoId) return;
+    if (!this.editBufferDispositivo.usuario_id || !this.editBufferDispositivo.serial) {
+      this.mensaje = '❌ usuario_id y serial son obligatorios';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoDispositivo = true;
+    this.http.put(`${this.API_URL}/api/dispositivos/${dispositivoId}`, {
+      usuario_id: Number(this.editBufferDispositivo.usuario_id),
+      serial: this.editBufferDispositivo.serial,
+      marca: this.editBufferDispositivo.marca || null,
+      modelo: this.editBufferDispositivo.modelo || null,
+      fecha_vinculacion: this.editBufferDispositivo.fecha_vinculacion || null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Dispositivo actualizado';
+        this.mensajeError = false;
+        this.guardandoDispositivo = false;
+        this.cancelarEdicionDispositivo();
+        this.cargarDispositivos();
+      },
+      error: (error) => {
+        console.error('Error actualizando dispositivo:', error);
+        this.mensaje = '❌ Error actualizando dispositivo: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoDispositivo = false;
+      }
+    });
+  }
+
+  eliminarDispositivo(dispositivoId: number): void {
+    const confirmado = confirm('¿Eliminar este dispositivo?');
+    if (!confirmado) return;
+    this.guardandoDispositivo = true;
+    this.http.delete(`${this.API_URL}/api/dispositivos/${dispositivoId}`).subscribe({
+      next: () => {
+        this.mensaje = '✅ Dispositivo eliminado';
+        this.mensajeError = false;
+        this.guardandoDispositivo = false;
+        if (this.editandoDispositivoId === dispositivoId) this.cancelarEdicionDispositivo();
+        this.cargarDispositivos();
+      },
+      error: (error) => {
+        console.error('Error eliminando dispositivo:', error);
+        this.mensaje = '❌ Error eliminando dispositivo: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoDispositivo = false;
+      }
+    });
+  }
+
+  // Helper para formatear datetime-local input
+  formatDateTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 }
