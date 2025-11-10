@@ -892,8 +892,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error eliminando usuario:', error);
-        this.mensaje = '❌ Error al eliminar: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardando = false;
       }
     });
@@ -909,8 +909,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error cargando perfiles:', error);
-        this.mensaje = '❌ Error cargando perfiles: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoPerfiles = false;
       }
     });
@@ -918,8 +918,7 @@ export class AppComponent implements OnInit {
 
   crearPerfil(): void {
     if (!this.nuevoPerfil.usuario_id) {
-      this.mensaje = '❌ usuario_id es obligatorio';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campo requerido', 'El ID de usuario es obligatorio para crear un perfil.');
       return;
     }
     this.guardandoPerfil = true;
@@ -931,16 +930,15 @@ export class AppComponent implements OnInit {
       estado: this.nuevoPerfil.estado || null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Perfil creado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Perfil creado', 'El perfil de salud ha sido creado exitosamente.');
         this.guardandoPerfil = false;
         this.nuevoPerfil = { usuario_id: '', objetivo: '', sexo: '', altura: '', estado: '' };
         this.cargarPerfiles();
       },
       error: (error) => {
         console.error('Error creando perfil:', error);
-        this.mensaje = '❌ Error creando perfil: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoPerfil = false;
       }
     });
@@ -965,8 +963,7 @@ export class AppComponent implements OnInit {
   guardarPerfil(perfilId: number): void {
     if (this.editandoPerfilId !== perfilId) return;
     if (!this.editBufferPerfil.usuario_id) {
-      this.mensaje = '❌ usuario_id es obligatorio';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campo requerido', 'El ID de usuario es obligatorio para actualizar el perfil.');
       return;
     }
     this.guardandoPerfil = true;
@@ -978,16 +975,15 @@ export class AppComponent implements OnInit {
       estado: this.editBufferPerfil.estado || null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Perfil actualizado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Perfil actualizado', 'Los cambios en el perfil se guardaron correctamente.');
         this.guardandoPerfil = false;
         this.cancelarEdicionPerfil();
         this.cargarPerfiles();
       },
       error: (error) => {
         console.error('Error actualizando perfil:', error);
-        this.mensaje = '❌ Error actualizando perfil: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoPerfil = false;
       }
     });
@@ -999,16 +995,15 @@ export class AppComponent implements OnInit {
     this.guardandoPerfil = true;
     this.http.delete(`${this.API_URL}/api/perfiles/${perfilId}`).subscribe({
       next: () => {
-        this.mensaje = '✅ Perfil eliminado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Perfil eliminado', 'El perfil de salud ha sido eliminado del sistema.');
         this.guardandoPerfil = false;
         if (this.editandoPerfilId === perfilId) this.cancelarEdicionPerfil();
         this.cargarPerfiles();
       },
       error: (error) => {
         console.error('Error eliminando perfil:', error);
-        this.mensaje = '❌ Error eliminando perfil: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoPerfil = false;
       }
     });
@@ -1024,8 +1019,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error cargando actividades:', error);
-        this.mensaje = '❌ Error cargando actividades: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoActividades = false;
       }
     });
@@ -1033,8 +1028,7 @@ export class AppComponent implements OnInit {
 
   crearActividad(): void {
     if (!this.nuevaActividad.usuario_id) {
-      this.mensaje = '❌ usuario_id es obligatorio';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campo requerido', 'El ID de usuario es obligatorio para crear una actividad.');
       return;
     }
     this.guardandoActividad = true;
@@ -1046,16 +1040,15 @@ export class AppComponent implements OnInit {
       duracion_segundos: this.nuevaActividad.duracion_segundos ? Number(this.nuevaActividad.duracion_segundos) : null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Actividad creada';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Actividad creada', 'La actividad física ha sido registrada exitosamente.');
         this.guardandoActividad = false;
         this.nuevaActividad = { usuario_id: '', tipo: '', hora_inicio: '', hora_fin: '', duracion_segundos: '' };
         this.cargarActividades();
       },
       error: (error) => {
         console.error('Error creando actividad:', error);
-        this.mensaje = '❌ Error creando actividad: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoActividad = false;
       }
     });
@@ -1080,8 +1073,7 @@ export class AppComponent implements OnInit {
   guardarActividad(actividadId: number): void {
     if (this.editandoActividadId !== actividadId) return;
     if (!this.editBufferActividad.usuario_id) {
-      this.mensaje = '❌ usuario_id es obligatorio';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campo requerido', 'El ID de usuario es obligatorio para actualizar la actividad.');
       return;
     }
     this.guardandoActividad = true;
@@ -1093,16 +1085,15 @@ export class AppComponent implements OnInit {
       duracion_segundos: this.editBufferActividad.duracion_segundos !== '' ? Number(this.editBufferActividad.duracion_segundos) : null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Actividad actualizada';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Actividad actualizada', 'Los cambios en la actividad se guardaron correctamente.');
         this.guardandoActividad = false;
         this.cancelarEdicionActividad();
         this.cargarActividades();
       },
       error: (error) => {
         console.error('Error actualizando actividad:', error);
-        this.mensaje = '❌ Error actualizando actividad: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoActividad = false;
       }
     });
@@ -1114,16 +1105,15 @@ export class AppComponent implements OnInit {
     this.guardandoActividad = true;
     this.http.delete(`${this.API_URL}/api/actividades/${actividadId}`).subscribe({
       next: () => {
-        this.mensaje = '✅ Actividad eliminada';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Actividad eliminada', 'La actividad ha sido eliminada del registro.');
         this.guardandoActividad = false;
         if (this.editandoActividadId === actividadId) this.cancelarEdicionActividad();
         this.cargarActividades();
       },
       error: (error) => {
         console.error('Error eliminando actividad:', error);
-        this.mensaje = '❌ Error eliminando actividad: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoActividad = false;
       }
     });
@@ -1139,8 +1129,8 @@ export class AppComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error cargando dispositivos:', error);
-        this.mensaje = '❌ Error cargando dispositivos: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoDispositivos = false;
       }
     });
@@ -1148,8 +1138,7 @@ export class AppComponent implements OnInit {
 
   crearDispositivo(): void {
     if (!this.nuevoDispositivo.usuario_id || !this.nuevoDispositivo.serial) {
-      this.mensaje = '❌ usuario_id y serial son obligatorios';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campos requeridos', 'El ID de usuario y el serial son obligatorios para crear un dispositivo.');
       return;
     }
     this.guardandoDispositivo = true;
@@ -1161,16 +1150,15 @@ export class AppComponent implements OnInit {
       fecha_vinculacion: this.nuevoDispositivo.fecha_vinculacion || null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Dispositivo creado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Dispositivo creado', `El dispositivo ${this.nuevoDispositivo.serial} ha sido vinculado exitosamente.`);
         this.guardandoDispositivo = false;
         this.nuevoDispositivo = { usuario_id: '', serial: '', marca: '', modelo: '', fecha_vinculacion: '' };
         this.cargarDispositivos();
       },
       error: (error) => {
         console.error('Error creando dispositivo:', error);
-        this.mensaje = '❌ Error creando dispositivo: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoDispositivo = false;
       }
     });
@@ -1195,8 +1183,7 @@ export class AppComponent implements OnInit {
   guardarDispositivo(dispositivoId: number): void {
     if (this.editandoDispositivoId !== dispositivoId) return;
     if (!this.editBufferDispositivo.usuario_id || !this.editBufferDispositivo.serial) {
-      this.mensaje = '❌ usuario_id y serial son obligatorios';
-      this.mensajeError = true;
+      this.mostrarNotificacion('warning', 'Campos requeridos', 'El ID de usuario y el serial son obligatorios para actualizar el dispositivo.');
       return;
     }
     this.guardandoDispositivo = true;
@@ -1208,16 +1195,15 @@ export class AppComponent implements OnInit {
       fecha_vinculacion: this.editBufferDispositivo.fecha_vinculacion || null
     }).subscribe({
       next: () => {
-        this.mensaje = '✅ Dispositivo actualizado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Dispositivo actualizado', 'Los cambios en el dispositivo se guardaron correctamente.');
         this.guardandoDispositivo = false;
         this.cancelarEdicionDispositivo();
         this.cargarDispositivos();
       },
       error: (error) => {
         console.error('Error actualizando dispositivo:', error);
-        this.mensaje = '❌ Error actualizando dispositivo: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoDispositivo = false;
       }
     });
@@ -1229,16 +1215,15 @@ export class AppComponent implements OnInit {
     this.guardandoDispositivo = true;
     this.http.delete(`${this.API_URL}/api/dispositivos/${dispositivoId}`).subscribe({
       next: () => {
-        this.mensaje = '✅ Dispositivo eliminado';
-        this.mensajeError = false;
+        this.mostrarNotificacion('success', 'Dispositivo eliminado', 'El dispositivo ha sido desvinculado del sistema.');
         this.guardandoDispositivo = false;
         if (this.editandoDispositivoId === dispositivoId) this.cancelarEdicionDispositivo();
         this.cargarDispositivos();
       },
       error: (error) => {
         console.error('Error eliminando dispositivo:', error);
-        this.mensaje = '❌ Error eliminando dispositivo: ' + (error.error?.message || error.message);
-        this.mensajeError = true;
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoDispositivo = false;
       }
     });
