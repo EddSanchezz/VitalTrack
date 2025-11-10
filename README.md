@@ -20,7 +20,7 @@ docker compose up -d --build
 
 2. Servicios:
 
-- API: http://localhost:3000 (health: /health)
+- API: http://localhost:4000 (health: /health)
 - phpMyAdmin: http://localhost:8081 (host: db, usuario: vt_user, pass: vt_pass)
 - MySQL: localhost:3307 (database: vitaltrack)
 
@@ -30,7 +30,7 @@ docker compose up -d --build
 
 ## Endpoints principales
 
-Base URL: http://localhost:3000/api
+Base URL: http://localhost:4000/api
 
 - GET/POST/PUT/DELETE `/usuarios`
 - GET/POST/PUT/DELETE `/perfiles`
@@ -41,7 +41,7 @@ Base URL: http://localhost:3000/api
 Ejemplo crear usuario:
 
 ```bash
-curl -X POST http://localhost:3000/api/usuarios \
+curl -X POST http://localhost:4000/api/usuarios \
 	-H 'Content-Type: application/json' \
 	-d '{"cedula":"123","nombre":"Ana","email":"ana@example.com","fecha_nacimiento":"1995-05-10","consentimiento_privacidad":true}'
 ```
@@ -102,16 +102,16 @@ cp .env.example .env
 npm run dev
 ```
 
-La API quedará en http://localhost:3000. Puedes verificar con:
+La API quedará en http://localhost:4000. Puedes verificar con:
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:4000/health
 ```
 
 4. Probar un CRUD (ejemplo crear actividad del usuario 1):
 
 ```bash
-curl -X POST http://localhost:3000/api/actividades \
+curl -X POST http://localhost:4000/api/actividades \
 	-H 'Content-Type: application/json' \
 	-d '{"usuario_id":1, "tipo":"caminar", "hora_inicio":"2025-11-04T08:00:00Z", "hora_fin":"2025-11-04T08:30:00Z", "duracion_segundos":1800}'
 ```

@@ -61,8 +61,8 @@ task health
 ## 🌐 URLs de Acceso
 
 - **Frontend:** http://localhost:4200
-- **Backend API:** http://localhost:3000
-- **Health Check:** http://localhost:3000/health
+- **Backend API:** http://localhost:4000
+- **Health Check:** http://localhost:4000/health
 
 ## 📦 Estructura del Proyecto
 
