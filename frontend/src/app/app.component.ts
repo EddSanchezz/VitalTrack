@@ -214,8 +214,158 @@ interface UsuarioResponse {
 
       <div class="panel" *ngIf="activeTab === 'perfiles'">
         <h2>Gestión de Perfiles</h2>
-        <p>Administra los perfiles de salud de los usuarios.</p>
-        <p>Información de altura, peso, tipo de sangre, condiciones médicas y más.</p>
+        <div class="usuarios-container">
+          <!-- Formulario Perfil -->
+          <div class="form-section">
+            <h3>Crear Perfil</h3>
+            <form (ngSubmit)="crearPerfil()" class="user-form">
+              <div class="form-group">
+                <label for="usuario_id">Usuario ID *</label>
+                <input 
+                  type="number" 
+                  id="usuario_id" 
+                  [(ngModel)]="nuevoPerfil.usuario_id" 
+                  name="usuario_id"
+                  required
+                  placeholder="ID del usuario"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="objetivo">Objetivo</label>
+                <input 
+                  type="text" 
+                  id="objetivo" 
+                  [(ngModel)]="nuevoPerfil.objetivo" 
+                  name="objetivo"
+                  placeholder="p.ej. Bajar peso"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="sexo">Sexo</label>
+                <select id="sexo" [(ngModel)]="nuevoPerfil.sexo" name="sexo">
+                  <option value="">-- Seleccione --</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="altura">Altura (cm)</label>
+                <input 
+                  type="number" 
+                  id="altura" 
+                  [(ngModel)]="nuevoPerfil.altura" 
+                  name="altura"
+                  placeholder="170"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="estado">Estado</label>
+                <select id="estado" [(ngModel)]="nuevoPerfil.estado" name="estado">
+                  <option value="">-- Seleccione --</option>
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn-submit" [disabled]="guardandoPerfil || !nuevoPerfil.usuario_id">
+                {{ guardandoPerfil ? 'Creando...' : 'Crear Perfil' }}
+              </button>
+            </form>
+
+            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
+              {{ mensaje }}
+            </div>
+          </div>
+
+          <!-- Tabla de Perfiles -->
+          <div class="table-section">
+            <div class="list-header" style="display:flex;align-items:center;gap:8px;">
+              <h3 style="margin:0;flex:1;">Lista de Perfiles</h3>
+              <button class="btn-mini" (click)="cargarPerfiles()" [disabled]="cargandoPerfiles">🔄</button>
+            </div>
+
+            <div *ngIf="cargandoPerfiles" class="loading">
+              Cargando perfiles...
+            </div>
+
+            <div *ngIf="!cargandoPerfiles && perfiles.length === 0" class="empty-state">
+              No hay perfiles registrados
+            </div>
+
+            <table *ngIf="!cargandoPerfiles && perfiles.length > 0" class="usuarios-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario ID</th>
+                  <th>Objetivo</th>
+                  <th>Sexo</th>
+                  <th>Altura</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of perfiles">
+                  <td>{{ p.id }}</td>
+                  <td>
+                    <ng-container *ngIf="editandoPerfilId === p.id; else usuarioIdView">
+                      <input class="edit-input" type="number" [(ngModel)]="editBufferPerfil.usuario_id" />
+                    </ng-container>
+                    <ng-template #usuarioIdView>{{ p.usuario_id }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoPerfilId === p.id; else objetivoView">
+                      <input class="edit-input" [(ngModel)]="editBufferPerfil.objetivo" />
+                    </ng-container>
+                    <ng-template #objetivoView>{{ p.objetivo || '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoPerfilId === p.id; else sexoView">
+                      <select class="edit-input" [(ngModel)]="editBufferPerfil.sexo">
+                        <option value="">--</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                        <option value="otro">Otro</option>
+                      </select>
+                    </ng-container>
+                    <ng-template #sexoView>{{ p.sexo || '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoPerfilId === p.id; else alturaView">
+                      <input class="edit-input" type="number" [(ngModel)]="editBufferPerfil.altura" />
+                    </ng-container>
+                    <ng-template #alturaView>{{ p.altura ?? '-' }}</ng-template>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="editandoPerfilId === p.id; else estadoView">
+                      <select class="edit-input" [(ngModel)]="editBufferPerfil.estado">
+                        <option value="">--</option>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                      </select>
+                    </ng-container>
+                    <ng-template #estadoView>{{ p.estado || '-' }}</ng-template>
+                  </td>
+                  <td class="acciones">
+                    <ng-container *ngIf="editandoPerfilId === p.id; else accionesPerfilNormales">
+                      <button class="btn-mini btn-save" (click)="guardarPerfil(p.id)" [disabled]="guardandoPerfil">Guardar</button>
+                      <button class="btn-mini btn-cancel" (click)="cancelarEdicionPerfil()" [disabled]="guardandoPerfil">Cancelar</button>
+                    </ng-container>
+                    <ng-template #accionesPerfilNormales>
+                      <button class="btn-mini" (click)="iniciarEdicionPerfil(p)" [disabled]="guardandoPerfil">Editar</button>
+                      <button class="btn-mini btn-cancel" (click)="eliminarPerfil(p.id)" [disabled]="guardandoPerfil">Eliminar</button>
+                    </ng-template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div class="panel" *ngIf="activeTab === 'actividades'">
@@ -241,6 +391,13 @@ export class AppComponent implements OnInit {
   cargandoUsuarios: boolean = false;
   usuarios: UsuarioResponse[] = [];
   private readonly API_URL = 'http://localhost:4000';
+  // Perfiles state
+  cargandoPerfiles: boolean = false;
+  perfiles: any[] = [];
+  nuevoPerfil: any = { usuario_id: '', objetivo: '', sexo: '', altura: '', estado: '' };
+  editandoPerfilId: number | null = null;
+  editBufferPerfil: any = {};
+  guardandoPerfil: boolean = false;
   editandoId: number | null = null;
   editBuffer: any = {};
   guardando: boolean = false;
@@ -263,6 +420,8 @@ export class AppComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'usuarios') {
       this.cargarUsuarios();
+    } else if (tab === 'perfiles') {
+      this.cargarPerfiles();
     }
   }
 
@@ -405,6 +564,121 @@ export class AppComponent implements OnInit {
         this.mensaje = '❌ Error al eliminar: ' + (error.error?.message || error.message);
         this.mensajeError = true;
         this.guardando = false;
+      }
+    });
+  }
+
+  // -------- PERFILES ---------
+  cargarPerfiles(): void {
+    this.cargandoPerfiles = true;
+    this.http.get<any[]>(`${this.API_URL}/api/perfiles`).subscribe({
+      next: (rows) => {
+        this.perfiles = rows;
+        this.cargandoPerfiles = false;
+      },
+      error: (error) => {
+        console.error('Error cargando perfiles:', error);
+        this.mensaje = '❌ Error cargando perfiles: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.cargandoPerfiles = false;
+      }
+    });
+  }
+
+  crearPerfil(): void {
+    if (!this.nuevoPerfil.usuario_id) {
+      this.mensaje = '❌ usuario_id es obligatorio';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoPerfil = true;
+    this.http.post(`${this.API_URL}/api/perfiles`, {
+      usuario_id: Number(this.nuevoPerfil.usuario_id),
+      objetivo: this.nuevoPerfil.objetivo || null,
+      sexo: this.nuevoPerfil.sexo || null,
+      altura: this.nuevoPerfil.altura ? Number(this.nuevoPerfil.altura) : null,
+      estado: this.nuevoPerfil.estado || null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Perfil creado';
+        this.mensajeError = false;
+        this.guardandoPerfil = false;
+        this.nuevoPerfil = { usuario_id: '', objetivo: '', sexo: '', altura: '', estado: '' };
+        this.cargarPerfiles();
+      },
+      error: (error) => {
+        console.error('Error creando perfil:', error);
+        this.mensaje = '❌ Error creando perfil: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoPerfil = false;
+      }
+    });
+  }
+
+  iniciarEdicionPerfil(perfil: any): void {
+    this.editandoPerfilId = perfil.id;
+    this.editBufferPerfil = {
+      usuario_id: perfil.usuario_id,
+      objetivo: perfil.objetivo || '',
+      sexo: perfil.sexo || '',
+      altura: perfil.altura ?? '',
+      estado: perfil.estado || ''
+    };
+  }
+
+  cancelarEdicionPerfil(): void {
+    this.editandoPerfilId = null;
+    this.editBufferPerfil = {};
+  }
+
+  guardarPerfil(perfilId: number): void {
+    if (this.editandoPerfilId !== perfilId) return;
+    if (!this.editBufferPerfil.usuario_id) {
+      this.mensaje = '❌ usuario_id es obligatorio';
+      this.mensajeError = true;
+      return;
+    }
+    this.guardandoPerfil = true;
+    this.http.put(`${this.API_URL}/api/perfiles/${perfilId}`, {
+      usuario_id: Number(this.editBufferPerfil.usuario_id),
+      objetivo: this.editBufferPerfil.objetivo || null,
+      sexo: this.editBufferPerfil.sexo || null,
+      altura: this.editBufferPerfil.altura !== '' ? Number(this.editBufferPerfil.altura) : null,
+      estado: this.editBufferPerfil.estado || null
+    }).subscribe({
+      next: () => {
+        this.mensaje = '✅ Perfil actualizado';
+        this.mensajeError = false;
+        this.guardandoPerfil = false;
+        this.cancelarEdicionPerfil();
+        this.cargarPerfiles();
+      },
+      error: (error) => {
+        console.error('Error actualizando perfil:', error);
+        this.mensaje = '❌ Error actualizando perfil: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoPerfil = false;
+      }
+    });
+  }
+
+  eliminarPerfil(perfilId: number): void {
+    const confirmado = confirm('¿Eliminar este perfil?');
+    if (!confirmado) return;
+    this.guardandoPerfil = true;
+    this.http.delete(`${this.API_URL}/api/perfiles/${perfilId}`).subscribe({
+      next: () => {
+        this.mensaje = '✅ Perfil eliminado';
+        this.mensajeError = false;
+        this.guardandoPerfil = false;
+        if (this.editandoPerfilId === perfilId) this.cancelarEdicionPerfil();
+        this.cargarPerfiles();
+      },
+      error: (error) => {
+        console.error('Error eliminando perfil:', error);
+        this.mensaje = '❌ Error eliminando perfil: ' + (error.error?.message || error.message);
+        this.mensajeError = true;
+        this.guardandoPerfil = false;
       }
     });
   }
