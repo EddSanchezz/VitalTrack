@@ -80,6 +80,18 @@ interface UsuarioResponse {
           (click)="selectTab('dispositivos')">
           Dispositivos
         </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'reportes'"
+          (click)="selectTab('reportes')">
+          Reportes
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab === 'estadisticas'"
+          (click)="selectTab('estadisticas')">
+          Estadísticas
+        </button>
       </div>
 
       <div class="panel" *ngIf="activeTab === 'usuarios'">
@@ -691,6 +703,36 @@ interface UsuarioResponse {
           </div>
         </div>
       </div>
+
+      <div class="panel" *ngIf="activeTab === 'reportes'">
+        <h2>Generación de Reportes</h2>
+        <div class="reportes-container">
+          <div class="reportes-descripcion">
+            <p>Esta sección permite generar un reporte consolidado en formato PDF que incluye un análisis completo de los datos de la plataforma.</p>
+            <p>Al hacer clic en el botón "Generar Reporte PDF", se compilarán los siguientes informes:</p>
+          </div>
+          
+          <div class="reportes-lista">
+            <div *ngFor="let reporte of reportes" class="reporte-item">
+              <span class="reporte-titulo">{{ reporte.titulo }}</span>
+              <span class="badge" [ngClass]="'badge-' + reporte.dificultad.toLowerCase()">{{ reporte.dificultad }}</span>
+            </div>
+          </div>
+
+          <div class="reportes-accion">
+            <button class="btn-submit" (click)="generarReportePDF()" [disabled]="generandoReporte">
+              {{ generandoReporte ? 'Generando PDF...' : 'Generar Reporte PDF' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" *ngIf="activeTab === 'estadisticas'">
+        <h2>Estadísticas</h2>
+        <div class="empty-state">
+          <p>Próximamente: Gráficos y visualizaciones de datos.</p>
+        </div>
+      </div>
     </div>
   `,
   styles: []
@@ -735,6 +777,21 @@ export class AppComponent implements OnInit {
   editBufferDispositivo: any = {};
   guardandoDispositivo: boolean = false;
 
+  // Reportes state
+  generandoReporte: boolean = false;
+  reportes: any[] = [
+    { titulo: 'Últimos 10 Usuarios Registrados', dificultad: 'Simple' },
+    { titulo: 'Última Lectura de Sensor de Frecuencia Cardíaca', dificultad: 'Simple' },
+    { titulo: 'Cantidad de Sensores por Dispositivo', dificultad: 'Simple' },
+    { titulo: 'Promedio Diario de Lecturas por Sensor (7 días)', dificultad: 'Intermedio' },
+    { titulo: 'Listado Completo de Sensores con Dispositivo y Usuario', dificultad: 'Intermedio' },
+    { titulo: 'Usuarios en Retos Activos con Progreso', dificultad: 'Intermedio' },
+    { titulo: 'Resumen Diario Actualizado (UPSERT)', dificultad: 'Intermedio' },
+    { titulo: 'Usuarios con Lecturas Sobre el Umbral (30 días)', dificultad: 'Complejo' },
+    { titulo: 'Media Móvil de 7 Días para Lecturas', dificultad: 'Complejo' },
+    { titulo: 'Top 5 Usuarios con Mayor Incremento en Lecturas', dificultad: 'Complejo' },
+  ];
+
   nuevoUsuario: Usuario = {
     cedula: '',
     nombre: '',
@@ -759,6 +816,8 @@ export class AppComponent implements OnInit {
       this.cargarActividades();
     } else if (tab === 'dispositivos') {
       this.cargarDispositivos();
+    } else if (tab === 'reportes') {
+      // No se necesita cargar nada al seleccionar la pestaña
     }
   }
 
@@ -1291,5 +1350,34 @@ export class AppComponent implements OnInit {
     }
 
     return { titulo, mensaje };
+  }
+
+  // -------- REPORTES ---------
+  generarReportePDF(): void {
+    this.generandoReporte = true;
+    this.http.get(`${this.API_URL}/api/reportes/generar`, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        this.generandoReporte = false;
+        this.mostrarNotificacion('success', 'Reporte Generado', 'El PDF se ha descargado exitosamente.');
+        
+        // Crear un enlace para descargar el archivo
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reporte_vitaltrack.pdf';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      },
+      error: (error) => {
+        this.generandoReporte = false;
+        console.error('Error generando el reporte:', error);
+        const { titulo, mensaje } = this.obtenerMensajeError(error);
+        this.mostrarNotificacion('error', titulo, 'No se pudo generar el reporte PDF. ' + mensaje);
+      }
+    });
   }
 }

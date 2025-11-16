@@ -11,10 +11,6 @@ app.use('/api/usuarios', usuariosRouter);
 
 // Setup test database before running tests
 beforeAll(async () => {
-  // Set test environment
-  process.env.DB_TYPE = 'sqlite';
-  process.env.DB_FILE = './test-database.sqlite';
-  
   await setupDatabase();
 });
 

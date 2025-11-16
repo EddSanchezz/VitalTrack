@@ -6,6 +6,7 @@ import perfilesRouter from '../routes/perfiles.js';
 import dispositivosRouter from '../routes/dispositivos.js';
 import actividadesRouter from '../routes/actividades.js';
 import estadisticasRouter from '../routes/estadisticas.js';
+import { setupDatabase } from '../../scripts/setup-db.js';
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,9 @@ app.use('/api/actividades', actividadesRouter);
 app.use('/api/estadisticas', estadisticasRouter);
 
 describe('Estadisticas API', () => {
+  beforeAll(async () => {
+    await setupDatabase();
+  });
   test('GET /api/estadisticas returns summary structure', async () => {
     const res = await request(app).get('/api/estadisticas').expect(200);
     expect(res.body).toHaveProperty('totals');

@@ -14,8 +14,6 @@ app.use('/api/actividades', actividadesRouter);
 let usuarioId;
 
 beforeAll(async () => {
-  process.env.DB_TYPE = 'sqlite';
-  process.env.DB_FILE = './test-database.sqlite';
   await setupDatabase();
   const usersRes = await request(app).get('/api/usuarios').expect(200);
   usuarioId = usersRes.body[0].id;

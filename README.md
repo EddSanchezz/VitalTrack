@@ -2,31 +2,27 @@
 
 API y base de datos para estadísticas de salud tipo Google Fit.
 
-Este repo incluye:
+Arquitectura actual (SQLite-only):
 
-- MySQL 8 inicializado con el esquema de VitalTrack (Docker)
-- Backend Node.js (Express) con 4 CRUDs: usuarios, perfiles, dispositivos y actividades
-- phpMyAdmin para explorar la base de datos
+- Backend Node.js (Express) con CRUDs: usuarios, perfiles, dispositivos y actividades
+- Base de datos SQLite embebida (archivo `backend/database.sqlite`)
+- Frontend Angular que consume la API
 
-## Ejecutar con Docker
+## Ejecutar con Docker (SQLite)
 
 Requisitos: Docker y Docker Compose.
 
-1. Levanta todo el stack:
+1. Levanta el backend (usa SQLite embebido y se autoconfigura al iniciar):
 
 ```bash
 docker compose up -d --build
 ```
 
-2. Servicios:
+2. Servicio disponible:
 
-- API: http://localhost:4000 (health: /health)
-- phpMyAdmin: http://localhost:8081 (host: db, usuario: vt_user, pass: vt_pass)
-- MySQL: localhost:3307 (database: vitaltrack)
+- API: http://localhost:4000 (health: /health y Swagger en /api/docs)
 
-3. Variables (se configuran en docker-compose.yml):
-
-- DB_HOST=db, DB_USER=vt_user, DB_PASSWORD=vt_pass, DB_NAME=vitaltrack
+No se requiere MySQL ni phpMyAdmin. Todos los datos se guardan en `backend/database.sqlite` (persisten en tu carpeta local).
 
 ## Endpoints principales
 
@@ -48,7 +44,7 @@ curl -X POST http://localhost:4000/api/usuarios \
 
 ## Desarrollo
 
-Durante el desarrollo, el contenedor del backend usa `nodemon` con hot reload y monta `./backend` como volumen.
+Durante el desarrollo, el contenedor del backend usa `nodemon` con hot reload y monta `./backend` como volumen. También puedes ejecutar todo localmente sin Docker.
 
 ## Ejecutar con Task (recomendado)
 
@@ -57,46 +53,33 @@ Instala la herramienta Task (go-task): https://taskfile.dev/installation/
 Comandos útiles desde la raíz del repo:
 
 ```bash
-# Levantar todo (DB + API + phpMyAdmin) con Docker
-task run
+# Backend: prepara SQLite y levanta API con hot reload
+task api
 
-# Solo DB (y phpMyAdmin)
-task db
+# Frontend: levanta Angular con proxy a la API
+task client
 
-# DB en Docker + backend local con nodemon
-task dev:local
-
-# Comprobar salud de la API
+# Health check rápido
 task health
 
-# Ver logs del backend (contenedor)
-task logs
-
-# Apagar contenedores / resetear datos
-task stop
-task reset
+# Resetear base de datos SQLite
+task api:reset
 ```
 
-## Ejecutar en local (sin dockerizar el backend)
+## Ejecutar en local (sin Docker)
 
-Si prefieres correr la API en tu máquina y usar solo MySQL en Docker:
-
-1. Levanta solo la base de datos (y phpMyAdmin, opcional):
-
-```bash
-docker compose up -d db phpmyadmin
-```
-
-2. Instala dependencias del backend y configura variables:
+1. Instala dependencias del backend y configura variables (SQLite):
 
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# .env ya apunta a localhost (127.0.0.1:3307) con vt_user/vt_pass
+# .env ejemplo ya usa SQLite: DB_TYPE=sqlite, DB_FILE=./database.sqlite
+# Inicializa la base de datos (crea tablas y datos de prueba)
+npm run db:setup
 ```
 
-3. Arranca el servidor en modo desarrollo (hot reload):
+2. Arranca el servidor en modo desarrollo (hot reload):
 
 ```bash
 npm run dev
@@ -108,7 +91,7 @@ La API quedará en http://localhost:4000. Puedes verificar con:
 curl http://localhost:4000/health
 ```
 
-4. Probar un CRUD (ejemplo crear actividad del usuario 1):
+3. Probar un CRUD (ejemplo crear actividad del usuario 1):
 
 ```bash
 curl -X POST http://localhost:4000/api/actividades \
@@ -118,5 +101,5 @@ curl -X POST http://localhost:4000/api/actividades \
 
 ## Próximos pasos
 
-- Crear frontend en Angular y consumir estos endpoints
+- Extender reportes y estadísticas del sistema
 - Añadir autenticación y más entidades del diagrama (sensores, lecturas, retos, etc.)

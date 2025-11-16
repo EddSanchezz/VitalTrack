@@ -16,17 +16,32 @@ async function setupDatabase() {
 		// Tipo de base de datos
 
 		if (dbType === 'sqlite') {
-			const dbPath = join(__dirname, '../database.sqlite');
+			const dbFile = process.env.DB_FILE || './database.sqlite';
+			const dbPath = join(__dirname, '..', dbFile);
 			
-			const db = new sqlite3.Database(dbPath, (err) => {
+			console.log('[setup-db] Using SQLite file:', dbPath);
+			const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE | sqlite3.OPEN_FULLMUTEX, (err) => {
 				if (err) {
 					console.error('Error creando SQLite:', err);
-					process.exit(1);
+					// En modo script salimos, en tests lanzamos error
+					if (import.meta.url === `file://${process.argv[1]}`) {
+						process.exit(1);
+					} else {
+						throw err;
+					}
 				}
 				// Archivo SQLite
 			});
 
-			// SQLite schema (adapted from MySQL)
+			// Configurar PRAGMAs para concurrencia en tests
+			await new Promise((resolve) => db.serialize(() => {
+				db.run("PRAGMA journal_mode = WAL");
+				db.run("PRAGMA synchronous = NORMAL");
+				db.run("PRAGMA foreign_keys = ON");
+				db.run("PRAGMA busy_timeout = 5000", resolve);
+			}));
+
+			// SQLite schema
 			const sqliteSchema = [
 				`CREATE TABLE IF NOT EXISTS usuario (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +57,7 @@ async function setupDatabase() {
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					usuario_id INTEGER NOT NULL,
 					objetivo TEXT,
-					sexo CHAR(1),
+					sexo VARCHAR(20),
 					altura DECIMAL(5, 2),
 					estado VARCHAR(20),
 					FOREIGN KEY (usuario_id) REFERENCES usuario (id) ON DELETE CASCADE
@@ -70,18 +85,50 @@ async function setupDatabase() {
 				
 				`CREATE INDEX IF NOT EXISTS idx_actividad_usuario_fecha ON actividad (usuario_id, hora_inicio)`,
 				
-				// Insert seed data
-				`INSERT OR IGNORE INTO usuario (cedula, nombre, email, fecha_nacimiento, consentimiento_privacidad)
-				 VALUES ('1234567890', 'Usuario Demo', 'demo@vitaltrack.local', '1990-01-01', 1)`,
+				`INSERT OR IGNORE INTO usuario (cedula, nombre, email, fecha_nacimiento, consentimiento_privacidad) VALUES
+				 ('1234567890', 'Ana García', 'ana@vitaltrack.local', '1995-05-10', 1),
+				 ('2345678901', 'Juan Pérez', 'juan@vitaltrack.local', '1988-07-22', 1),
+				 ('3456789012', 'María López', 'maria@vitaltrack.local', '2000-09-30', 1),
+				 ('4567890123', 'Carlos Ruiz', 'carlos@vitaltrack.local', '1982-01-15', 1)`,
 				
-				// Insert profile for demo user
+				
 				`INSERT OR IGNORE INTO perfil (usuario_id, objetivo, sexo, altura, estado)
-				 SELECT id, 'Bajar 5kg', 'M', 175.00, 'activo'
-				 FROM usuario WHERE email = 'demo@vitaltrack.local'`
+				 SELECT u.id, 'Bajar 5kg', 'femenino', 165.00, 'activo' FROM usuario u WHERE u.email = 'ana@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO perfil (usuario_id, objetivo, sexo, altura, estado)
+				 SELECT u.id, 'Ganar masa muscular', 'masculino', 178.00, 'activo' FROM usuario u WHERE u.email = 'juan@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO perfil (usuario_id, objetivo, sexo, altura, estado)
+				 SELECT u.id, 'Mantener', 'femenino', 170.00, 'inactivo' FROM usuario u WHERE u.email = 'maria@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO perfil (usuario_id, objetivo, sexo, altura, estado)
+				 SELECT u.id, 'Bajar 10kg', 'masculino', 180.00, 'activo' FROM usuario u WHERE u.email = 'carlos@vitaltrack.local'`,
+				
+				
+				`INSERT OR IGNORE INTO dispositivo (usuario_id, serial, marca, modelo, fecha_vinculacion)
+				 SELECT u.id, 'FIT-0001', 'Fitbit', 'Charge 5', '2025-01-10' FROM usuario u WHERE u.email = 'ana@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO dispositivo (usuario_id, serial, marca, modelo, fecha_vinculacion)
+				 SELECT u.id, 'GAR-0001', 'Garmin', 'Vivoactive 4', '2025-02-05' FROM usuario u WHERE u.email = 'juan@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO dispositivo (usuario_id, serial, marca, modelo, fecha_vinculacion)
+				 SELECT u.id, 'GAR-0002', 'Garmin', 'Forerunner 255', '2025-03-12' FROM usuario u WHERE u.email = 'juan@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO dispositivo (usuario_id, serial, marca, modelo, fecha_vinculacion)
+				 SELECT u.id, 'XIA-0001', 'Xiaomi', 'Mi Band 7', '2025-04-20' FROM usuario u WHERE u.email = 'maria@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO dispositivo (usuario_id, serial, marca, modelo, fecha_vinculacion)
+				 SELECT u.id, 'FIT-0002', 'Fitbit', 'Versa 3', '2025-05-18' FROM usuario u WHERE u.email = 'carlos@vitaltrack.local'`,
+				
+				
+				`INSERT OR IGNORE INTO actividad (usuario_id, tipo, hora_inicio, hora_fin, duracion_segundos)
+				 SELECT u.id, 'correr', datetime('now','-5 days'), datetime('now','-5 days','+45 minutes'), 2700 FROM usuario u WHERE u.email = 'ana@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO actividad (usuario_id, tipo, hora_inicio, hora_fin, duracion_segundos)
+				 SELECT u.id, 'caminar', datetime('now','-10 days'), datetime('now','-10 days','+30 minutes'), 1800 FROM usuario u WHERE u.email = 'ana@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO actividad (usuario_id, tipo, hora_inicio, hora_fin, duracion_segundos)
+				 SELECT u.id, 'ciclismo', datetime('now','-2 days'), datetime('now','-2 days','+2 hours'), 7200 FROM usuario u WHERE u.email = 'juan@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO actividad (usuario_id, tipo, hora_inicio, hora_fin, duracion_segundos)
+				 SELECT u.id, 'correr', datetime('now','-40 days'), datetime('now','-40 days','+30 minutes'), 1800 FROM usuario u WHERE u.email = 'maria@vitaltrack.local'`,
+				`INSERT OR IGNORE INTO actividad (usuario_id, tipo, hora_inicio, hora_fin, duracion_segundos)
+				 SELECT u.id, 'natación', datetime('now','-1 days'), datetime('now','-1 days','+1 hours'), 3600 FROM usuario u WHERE u.email = 'carlos@vitaltrack.local'`
 			];
 
 			// Execute all statements
 			for (const sql of sqliteSchema) {
+				// console.log('[setup-db] Executing SQL:', sql.slice(0, 80).replace(/\n/g,' '), '...');
 				await new Promise((resolve, reject) => {
 					db.run(sql, (err) => {
 						if (err) {
@@ -95,6 +142,7 @@ async function setupDatabase() {
 			}
 
 			db.close();
+			console.log('[setup-db] SQLite ready');
 			// Base de datos SQLite configurada correctamente
 
 		} else {

@@ -14,8 +14,6 @@ app.use('/api/perfiles', perfilesRouter);
 let usuarioId;
 
 beforeAll(async () => {
-  process.env.DB_TYPE = 'sqlite';
-  process.env.DB_FILE = './test-database.sqlite';
   await setupDatabase();
 
   const usersRes = await request(app).get('/api/usuarios').expect(200);

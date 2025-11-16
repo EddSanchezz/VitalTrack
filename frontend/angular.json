@@ -25,7 +25,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "vitaltrack:build"
+            "buildTarget": "vitaltrack:build",
+            "proxyConfig": "proxy.conf.json"
           }
         }
       }

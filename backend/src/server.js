@@ -13,6 +13,7 @@ import perfilesRouter from './routes/perfiles.js';
 import dispositivosRouter from './routes/dispositivos.js';
 import actividadesRouter from './routes/actividades.js';
 import estadisticasRouter from './routes/estadisticas.js';
+import reportesRouter from './routes/reportes.js';
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use('/api/perfiles', perfilesRouter);
 app.use('/api/dispositivos', dispositivosRouter);
 app.use('/api/actividades', actividadesRouter);
 app.use('/api/estadisticas', estadisticasRouter);
+app.use('/api/reportes', reportesRouter);
 
 // 404
 app.use((req, res) => res.status(404).json({ message: 'Not Found' }));

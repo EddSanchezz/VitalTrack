@@ -1,0 +1,2 @@
+-- Optional additional seed data for SQLite (not required).
+-- The main schema and base seed are in db/init.sql.
