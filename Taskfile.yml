@@ -1,12 +1,17 @@
 version: "3"
 
 vars:
-  API_URL: http://localhost:3000
+  API_URL: http://localhost:4000
   CLIENT_URL: http://localhost:4200
 
 tasks:
   # Frontend Commands
   client:
+    desc: "Alias: inicia el frontend (equivale a client:start)"
+    cmds:
+      - task: client:start
+
+  client:start:
     desc: "Ejecuta el frontend Angular"
     dir: frontend
     cmds:
@@ -14,20 +19,25 @@ tasks:
       - npm start
 
   client:build:
-    desc: "Construye el frontend"
+    desc: "Construye el frontend (Angular build)"
     dir: frontend
     cmds:
       - npm install
       - npm run build
 
   client:test:
-    desc: "Tests del frontend"
+    desc: "Tests del frontend (unit + karma)"
     dir: frontend
     cmds:
       - npm test
 
   # Backend Commands  
   api:
+    desc: "Alias: inicia el backend (equivale a api:start)"
+    cmds:
+      - task: api:start
+
+  api:start:
     desc: "Ejecuta el backend con SQLite"
     dir: backend
     cmds:
@@ -37,21 +47,21 @@ tasks:
       - node ./node_modules/nodemon/bin/nodemon.js --watch src --ext js --exec node src/server.js
 
   api:setup-db:
-    desc: "Configura la base de datos"
+    desc: "Configura la base de datos (crea .env y prepara SQLite)"
     dir: backend
     cmds:
-      - powershell -c "if (!(Test-Path .env)) { 'PORT=3000' | Out-File -Encoding utf8 .env; 'DB_TYPE=sqlite' | Out-File -Encoding utf8 -Append .env; 'DB_FILE=./database.sqlite' | Out-File -Encoding utf8 -Append .env; 'TZ=UTC' | Out-File -Encoding utf8 -Append .env }"
+      - powershell -c "if (!(Test-Path .env)) { 'PORT=4000' | Out-File -Encoding utf8 .env; 'DB_TYPE=sqlite' | Out-File -Encoding utf8 -Append .env; 'DB_FILE=./database.sqlite' | Out-File -Encoding utf8 -Append .env; 'TZ=UTC' | Out-File -Encoding utf8 -Append .env }"
       - node scripts/setup-db.js
 
   api:test:
-    desc: "Tests del API"
+    desc: "Tests del API (Jest)"
     dir: backend
     cmds:
       - npm install
       - npm test
 
   api:reset:
-    desc: "Resetea la base de datos"
+    desc: "Resetea la base de datos (borra archivo y reconfigura)"
     dir: backend
     cmds:
       - powershell -c "if (Test-Path database.sqlite) { Remove-Item database.sqlite }"

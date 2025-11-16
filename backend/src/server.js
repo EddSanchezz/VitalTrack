@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { ping } from './db.js';
+import { ping, initializeDatabase } from './db.js';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'js-yaml';
 import { readFileSync } from 'fs';
@@ -12,8 +12,12 @@ import usuariosRouter from './routes/usuarios.js';
 import perfilesRouter from './routes/perfiles.js';
 import dispositivosRouter from './routes/dispositivos.js';
 import actividadesRouter from './routes/actividades.js';
+import estadisticasRouter from './routes/estadisticas.js';
 
 dotenv.config();
+
+// Initialize database connection
+initializeDatabase();
 
 const app = express();
 
@@ -21,7 +25,7 @@ app.use(cors());
 app.use(express.json());
 
 // Health
-app.get('/health', async (_req, res) => {
+app.get(['/health', '/api/health'], async (_req, res) => {
   try {
     const ok = await ping();
     res.json({ status: 'ok', db: ok ? 'connected' : 'unknown' });
@@ -50,11 +54,13 @@ app.use('/api/usuarios', usuariosRouter);
 app.use('/api/perfiles', perfilesRouter);
 app.use('/api/dispositivos', dispositivosRouter);
 app.use('/api/actividades', actividadesRouter);
+app.use('/api/estadisticas', estadisticasRouter);
 
 // 404
 app.use((req, res) => res.status(404).json({ message: 'Not Found' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  // API VitalTrack iniciada
+  console.log(`✅ API VitalTrack corriendo en http://localhost:${PORT}`);
+  console.log(`📚 Documentación: http://localhost:${PORT}/api/docs`);
 });
