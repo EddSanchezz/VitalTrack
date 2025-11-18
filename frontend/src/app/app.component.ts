@@ -1,385 +1,59 @@
-                    <input pInputText type="number" id="usuario_id" [(ngModel)]="nuevoPerfil.usuario_id" name="usuario_id" required placeholder="ID del usuario" />
-                  </div>
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 
-                  <div class="form-group">
-                    <label for="objetivo">Objetivo</label>
-                    <input pInputText type="text" id="objetivo" [(ngModel)]="nuevoPerfil.objetivo" name="objetivo" placeholder="p.ej. Bajar peso" />
-                  </div>
+interface Usuario {
+  cedula: string;
+  nombre: string;
+  email: string;
+  fecha_nacimiento: string;
+  consentimiento_privacidad: boolean;
+}
 
-                  <div class="form-group">
-                    <label for="sexo">Sexo</label>
-                    <select pInputText id="sexo" [(ngModel)]="nuevoPerfil.sexo" name="sexo">
-                      <option value="">-- Seleccione --</option>
-                      <option value="masculino">Masculino</option>
-                      <option value="femenino">Femenino</option>
-                      <option value="otro">Otro</option>
-                    </select>
-                  </div>
+interface UsuarioResponse {
+  id: number;
+  cedula: string;
+  nombre: string;
+  email: string;
+  fecha_registro: string;
+  fecha_nacimiento: string;
+  consentimiento_privacidad: number;
+}
 
-                  <div class="form-group">
-                    <label for="altura">Altura (cm)</label>
-                    <input pInputText type="number" id="altura" [(ngModel)]="nuevoPerfil.altura" name="altura" placeholder="170" />
-                  </div>
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="container">
+      <h1>VitalTrack - Sistema de Gestión</h1>
 
-                  <div class="form-group">
-                    <label for="estado">Estado</label>
-                    <select pInputText id="estado" [(ngModel)]="nuevoPerfil.estado" name="estado">
-                      <option value="">-- Seleccione --</option>
-                      <option value="activo">Activo</option>
-                      <option value="inactivo">Inactivo</option>
-                    </select>
-                  </div>
-
-                  <button pButton type="submit" label="{{ guardandoPerfil ? 'Creando...' : 'Crear Perfil' }}" [disabled]="guardandoPerfil || !nuevoPerfil.usuario_id"></button>
-                </form>
-              </div>
-
-              <div class="table-section">
-                <div class="list-header" style="display:flex;align-items:center;gap:8px;">
-                  <h3 style="margin:0;flex:1;">Lista de Perfiles</h3>
-                  <button pButton class="p-button-sm" label="Recargar" (click)="cargarPerfiles()" [disabled]="cargandoPerfiles"></button>
-                </div>
-
-                <div *ngIf="cargandoPerfiles" class="loading">Cargando perfiles...</div>
-                <div *ngIf="!cargandoPerfiles && perfiles.length === 0" class="empty-state">No hay perfiles registrados</div>
-
-                <p-table *ngIf="!cargandoPerfiles && perfiles.length > 0" [value]="perfiles" [tableStyle]="{'min-width':'60rem'}">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>ID</th>
-                      <th>Usuario ID</th>
-                      <th>Objetivo</th>
-                      <th>Sexo</th>
-                      <th>Altura</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-p>
-                    <tr>
-                      <td>{{ p.id }}</td>
-                      <td>
-                        <ng-container *ngIf="editandoPerfilId === p.id; else usuarioIdView">
-                          <input pInputText class="edit-input" type="number" [(ngModel)]="editBufferPerfil.usuario_id" />
-                        </ng-container>
-                        <ng-template #usuarioIdView>{{ p.usuario_id }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoPerfilId === p.id; else objetivoView">
-                          <input pInputText class="edit-input" [(ngModel)]="editBufferPerfil.objetivo" />
-                        </ng-container>
-                        <ng-template #objetivoView>{{ p.objetivo || '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoPerfilId === p.id; else sexoView">
-                          <select class="edit-input" [(ngModel)]="editBufferPerfil.sexo">
-                            <option value="">--</option>
-                            <option value="masculino">Masculino</option>
-                            <option value="femenino">Femenino</option>
-                            <option value="otro">Otro</option>
-                          </select>
-                        </ng-container>
-                        <ng-template #sexoView>{{ p.sexo || '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoPerfilId === p.id; else alturaView">
-                          <input pInputText class="edit-input" type="number" [(ngModel)]="editBufferPerfil.altura" />
-                        </ng-container>
-                        <ng-template #alturaView>{{ p.altura ?? '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoPerfilId === p.id; else estadoView">
-                          <select class="edit-input" [(ngModel)]="editBufferPerfil.estado">
-                            <option value="">--</option>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                          </select>
-                        </ng-container>
-                        <ng-template #estadoView>{{ p.estado || '-' }}</ng-template>
-                      </td>
-                      <td class="acciones">
-                        <ng-container *ngIf="editandoPerfilId === p.id; else accionesPerfilNormales">
-                          <button pButton class="p-button-sm p-button-success" label="Guardar" (click)="guardarPerfil(p.id)" [disabled]="guardandoPerfil"></button>
-                          <button pButton class="p-button-sm p-button-secondary" label="Cancelar" (click)="cancelarEdicionPerfil()" [disabled]="guardandoPerfil"></button>
-                        </ng-container>
-                        <ng-template #accionesPerfilNormales>
-                          <button pButton class="p-button-sm" label="Editar" (click)="iniciarEdicionPerfil(p)" [disabled]="guardandoPerfil"></button>
-                          <button pButton class="p-button-sm p-button-danger" label="Eliminar" (click)="eliminarPerfil(p.id)" [disabled]="guardandoPerfil"></button>
-                        </ng-template>
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-              </div>
-            </div>
+      <!-- Notificaciones personalizadas -->
+      <div class="notificacion-container">
+        <div *ngFor="let n of notificaciones" class="notificacion" [ngClass]="[n.tipo, n.closing ? 'closing' : '']">
+          <div class="notificacion-icono">{{ iconoNotificacion(n.tipo) }}</div>
+          <div class="notificacion-contenido">
+            <div class="notificacion-titulo">{{ n.titulo }}</div>
+            <div class="notificacion-mensaje">{{ n.mensaje }}</div>
           </div>
-        </p-tabPanel>
-
-        <p-tabPanel header="Actividades">
-          <div class="panel">
-            <h2>Registro de Actividades</h2>
-            <div class="usuarios-container">
-              <div class="form-section">
-                <h3>Crear Actividad</h3>
-                <form (ngSubmit)="crearActividad()" class="user-form">
-                  <div class="form-group">
-                    <label for="act_usuario_id">Usuario ID *</label>
-                    <input pInputText type="number" id="act_usuario_id" [(ngModel)]="nuevaActividad.usuario_id" name="act_usuario_id" required placeholder="ID del usuario" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="tipo">Tipo</label>
-                    <input pInputText type="text" id="tipo" [(ngModel)]="nuevaActividad.tipo" name="tipo" placeholder="p.ej. Correr, Caminar" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="hora_inicio">Hora Inicio</label>
-                    <p-calendar inputId="hora_inicio" [(ngModel)]="nuevaActividad.hora_inicio" name="hora_inicio" showTime="true" hourFormat="24" [showIcon]="true"></p-calendar>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="hora_fin">Hora Fin</label>
-                    <p-calendar inputId="hora_fin" [(ngModel)]="nuevaActividad.hora_fin" name="hora_fin" showTime="true" hourFormat="24" [showIcon]="true"></p-calendar>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="duracion_segundos">Duración (segundos)</label>
-                    <input pInputText type="number" id="duracion_segundos" [(ngModel)]="nuevaActividad.duracion_segundos" name="duracion_segundos" placeholder="Opcional si se provee inicio/fin" />
-                  </div>
-
-                  <button pButton type="submit" label="{{ guardandoActividad ? 'Creando...' : 'Crear Actividad' }}" [disabled]="guardandoActividad || !nuevaActividad.usuario_id"></button>
-                </form>
-              </div>
-
-              <div class="table-section">
-                <div class="list-header" style="display:flex;align-items:center;gap:8px;">
-                  <h3 style="margin:0;flex:1;">Lista de Actividades</h3>
-                  <button pButton class="p-button-sm" label="Recargar" (click)="cargarActividades()" [disabled]="cargandoActividades"></button>
-                </div>
-
-                <div *ngIf="cargandoActividades" class="loading">Cargando actividades...</div>
-                <div *ngIf="!cargandoActividades && actividades.length === 0" class="empty-state">No hay actividades registradas</div>
-
-                <p-table *ngIf="!cargandoActividades && actividades.length > 0" [value]="actividades" [tableStyle]="{'min-width':'60rem'}">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>ID</th>
-                      <th>Usuario ID</th>
-                      <th>Tipo</th>
-                      <th>Hora Inicio</th>
-                      <th>Hora Fin</th>
-                      <th>Duración (seg)</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-a>
-                    <tr>
-                      <td>{{ a.id }}</td>
-                      <td>
-                        <ng-container *ngIf="editandoActividadId === a.id; else actUsuarioIdView">
-                          <input pInputText class="edit-input" type="number" [(ngModel)]="editBufferActividad.usuario_id" />
-                        </ng-container>
-                        <ng-template #actUsuarioIdView>{{ a.usuario_id }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoActividadId === a.id; else tipoView">
-                          <input pInputText class="edit-input" [(ngModel)]="editBufferActividad.tipo" />
-                        </ng-container>
-                        <ng-template #tipoView>{{ a.tipo || '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoActividadId === a.id; else inicioView">
-                          <p-calendar class="edit-input" [(ngModel)]="editBufferActividad.hora_inicio" showTime="true" hourFormat="24"></p-calendar>
-                        </ng-container>
-                        <ng-template #inicioView>{{ a.hora_inicio ? formatearFecha(a.hora_inicio) : '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoActividadId === a.id; else finView">
-                          <p-calendar class="edit-input" [(ngModel)]="editBufferActividad.hora_fin" showTime="true" hourFormat="24"></p-calendar>
-                        </ng-container>
-                        <ng-template #finView>{{ a.hora_fin ? formatearFecha(a.hora_fin) : '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoActividadId === a.id; else duracionView">
-                          <input pInputText class="edit-input" type="number" [(ngModel)]="editBufferActividad.duracion_segundos" />
-                        </ng-container>
-                        <ng-template #duracionView>{{ a.duracion_segundos ?? '-' }}</ng-template>
-                      </td>
-                      <td class="acciones">
-                        <ng-container *ngIf="editandoActividadId === a.id; else accionesActividadNormales">
-                          <button pButton class="p-button-sm p-button-success" label="Guardar" (click)="guardarActividad(a.id)" [disabled]="guardandoActividad"></button>
-                          <button pButton class="p-button-sm p-button-secondary" label="Cancelar" (click)="cancelarEdicionActividad()" [disabled]="guardandoActividad"></button>
-                        </ng-container>
-                        <ng-template #accionesActividadNormales>
-                          <button pButton class="p-button-sm" label="Editar" (click)="iniciarEdicionActividad(a)" [disabled]="guardandoActividad"></button>
-                          <button pButton class="p-button-sm p-button-danger" label="Eliminar" (click)="eliminarActividad(a.id)" [disabled]="guardandoActividad"></button>
-                        </ng-template>
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-              </div>
-            </div>
-          </div>
-        </p-tabPanel>
-
-        <p-tabPanel header="Dispositivos">
-          <div class="panel">
-            <h2>Dispositivos Conectados</h2>
-            <div class="usuarios-container">
-              <div class="form-section">
-                <h3>Crear Dispositivo</h3>
-                <form (ngSubmit)="crearDispositivo()" class="user-form">
-                  <div class="form-group">
-                    <label for="disp_usuario_id">Usuario ID *</label>
-                    <input pInputText type="number" id="disp_usuario_id" [(ngModel)]="nuevoDispositivo.usuario_id" name="disp_usuario_id" required placeholder="ID del usuario" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="serial">Serial *</label>
-                    <input pInputText type="text" id="serial" [(ngModel)]="nuevoDispositivo.serial" name="serial" required placeholder="Número de serie único" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="marca">Marca</label>
-                    <input pInputText type="text" id="marca" [(ngModel)]="nuevoDispositivo.marca" name="marca" placeholder="p.ej. Fitbit, Garmin" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="modelo">Modelo</label>
-                    <input pInputText type="text" id="modelo" [(ngModel)]="nuevoDispositivo.modelo" name="modelo" placeholder="p.ej. Charge 5" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="fecha_vinculacion">Fecha Vinculación</label>
-                    <p-calendar inputId="fecha_vinculacion" [(ngModel)]="nuevoDispositivo.fecha_vinculacion" name="fecha_vinculacion" dateFormat="yy-mm-dd" [showIcon]="true"></p-calendar>
-                  </div>
-
-                  <button pButton type="submit" label="{{ guardandoDispositivo ? 'Creando...' : 'Crear Dispositivo' }}" [disabled]="guardandoDispositivo || !nuevoDispositivo.usuario_id || !nuevoDispositivo.serial"></button>
-                </form>
-              </div>
-
-              <div class="table-section">
-                <div class="list-header" style="display:flex;align-items:center;gap:8px;">
-                  <h3 style="margin:0;flex:1;">Lista de Dispositivos</h3>
-                  <button pButton class="p-button-sm" label="Recargar" (click)="cargarDispositivos()" [disabled]="cargandoDispositivos"></button>
-                </div>
-
-                <div *ngIf="cargandoDispositivos" class="loading">Cargando dispositivos...</div>
-                <div *ngIf="!cargandoDispositivos && dispositivos.length === 0" class="empty-state">No hay dispositivos registrados</div>
-
-                <p-table *ngIf="!cargandoDispositivos && dispositivos.length > 0" [value]="dispositivos" [tableStyle]="{'min-width':'60rem'}">
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th>ID</th>
-                      <th>Usuario ID</th>
-                      <th>Serial</th>
-                      <th>Marca</th>
-                      <th>Modelo</th>
-                      <th>Fecha Vinculación</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-d>
-                    <tr>
-                      <td>{{ d.id }}</td>
-                      <td>
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else dispUsuarioIdView">
-                          <input pInputText class="edit-input" type="number" [(ngModel)]="editBufferDispositivo.usuario_id" />
-                        </ng-container>
-                        <ng-template #dispUsuarioIdView>{{ d.usuario_id }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else serialView">
-                          <input pInputText class="edit-input" [(ngModel)]="editBufferDispositivo.serial" />
-                        </ng-container>
-                        <ng-template #serialView>{{ d.serial }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else marcaView">
-                          <input pInputText class="edit-input" [(ngModel)]="editBufferDispositivo.marca" />
-                        </ng-container>
-                        <ng-template #marcaView>{{ d.marca || '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else modeloView">
-                          <input pInputText class="edit-input" [(ngModel)]="editBufferDispositivo.modelo" />
-                        </ng-container>
-                        <ng-template #modeloView>{{ d.modelo || '-' }}</ng-template>
-                      </td>
-                      <td>
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else fechaVincView">
-                          <p-calendar class="edit-input" [(ngModel)]="editBufferDispositivo.fecha_vinculacion" dateFormat="yy-mm-dd"></p-calendar>
-                        </ng-container>
-                        <ng-template #fechaVincView>{{ d.fecha_vinculacion || '-' }}</ng-template>
-                      </td>
-                      <td class="acciones">
-                        <ng-container *ngIf="editandoDispositivoId === d.id; else accionesDispositivoNormales">
-                          <button pButton class="p-button-sm p-button-success" label="Guardar" (click)="guardarDispositivo(d.id)" [disabled]="guardandoDispositivo"></button>
-                          <button pButton class="p-button-sm p-button-secondary" label="Cancelar" (click)="cancelarEdicionDispositivo()" [disabled]="guardandoDispositivo"></button>
-                        </ng-container>
-                        <ng-template #accionesDispositivoNormales>
-                          <button pButton class="p-button-sm" label="Editar" (click)="iniciarEdicionDispositivo(d)" [disabled]="guardandoDispositivo"></button>
-                          <button pButton class="p-button-sm p-button-danger" label="Eliminar" (click)="eliminarDispositivo(d.id)" [disabled]="guardandoDispositivo"></button>
-                        </ng-template>
-                      </td>
-                    </tr>
-                  </ng-template>
-                </p-table>
-              </div>
-            </div>
-          </div>
-        </p-tabPanel>
-
-        <p-tabPanel header="Reportes">
-          <div class="panel">
-            <h2>Generación de Reportes</h2>
-            <div class="reportes-container">
-              <div class="reportes-descripcion">
-                <p>Esta sección permite generar un reporte consolidado en formato PDF que incluye un análisis completo de los datos de la plataforma.</p>
-                <p>Al hacer clic en el botón "Generar Reporte PDF", se compilarán los siguientes informes:</p>
-              </div>
-              
-              <div class="reportes-lista">
-                <div *ngFor="let reporte of reportes" class="reporte-item">
-                  <span class="reporte-titulo">{{ reporte.titulo }}</span>
-                  <span class="badge" [ngClass]="'badge-' + reporte.dificultad.toLowerCase()">{{ reporte.dificultad }}</span>
-                </div>
-              </div>
-
-              <div class="reportes-accion">
-                <button pButton class="p-button-outlined" (click)="generarReportePDF()" [disabled]="generandoReporte" label="{{ generandoReporte ? 'Generando PDF...' : 'Generar Reporte PDF' }}"></button>
-              </div>
-            </div>
-          </div>
-        </p-tabPanel>
-
-        <p-tabPanel header="Estadísticas">
-          <div class="panel">
-            <h2>Estadísticas</h2>
-            <div class="empty-state">
-              <p>Próximamente: Gráficos y visualizaciones de datos.</p>
-            </div>
-          </div>
-        </p-tabPanel>
-      </p-tabView>
-          (click)="selectTab('reportes')">
-          Reportes
-        </button>
-        <button 
-          class="tab" 
-  activeTab: string = 'usuarios';
-  tabOrder: string[] = ['usuarios', 'perfiles', 'actividades', 'dispositivos', 'reportes', 'estadisticas'];
-  get activeIndex(): number { return this.tabOrder.indexOf(this.activeTab); }
-  set activeIndex(i: number) { this.activeTab = this.tabOrder[i] || 'usuarios'; }
-          (click)="selectTab('estadisticas')">
-          Estadísticas
-        </button>
+          <button class="notificacion-cerrar" (click)="cerrarNotificacion(n.id)">×</button>
+        </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'usuarios'">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab" [class.active]="activeTab==='usuarios'" (click)="setTab('usuarios')">Usuarios</button>
+        <button class="tab" [class.active]="activeTab==='perfiles'" (click)="setTab('perfiles')">Perfiles</button>
+        <button class="tab" [class.active]="activeTab==='actividades'" (click)="setTab('actividades')">Actividades</button>
+        <button class="tab" [class.active]="activeTab==='dispositivos'" (click)="setTab('dispositivos')">Dispositivos</button>
+        <button class="tab" [class.active]="activeTab==='reportes'" (click)="setTab('reportes')">Reportes</button>
+        <button class="tab" [class.active]="activeTab==='estadisticas'" (click)="setTab('estadisticas')">Estadísticas</button>
+      </div>
+
+      <!-- Panel: Usuarios -->
+      <div class="panel" *ngIf="activeTab==='usuarios'">
         <h2>Gestión de Usuarios</h2>
-        
         <div class="usuarios-container">
           <!-- Formulario -->
           <div class="form-section">
@@ -387,65 +61,32 @@
             <form (ngSubmit)="crearUsuario()" class="user-form">
               <div class="form-group">
                 <label for="cedula">Cédula:</label>
-                <input 
-                  type="text" 
-                  id="cedula" 
-                  [(ngModel)]="nuevoUsuario.cedula" 
-                  name="cedula"
-                  required
-                  placeholder="Ingrese la cédula"
-                />
+                <input type="text" id="cedula" [(ngModel)]="nuevoUsuario.cedula" name="cedula" required placeholder="Ingrese la cédula" />
               </div>
 
               <div class="form-group">
                 <label for="nombre">Nombre:</label>
-                <input 
-                  type="text" 
-                  id="nombre" 
-                  [(ngModel)]="nuevoUsuario.nombre" 
-                  name="nombre"
-                  required
-                  placeholder="Ingrese el nombre completo"
-                />
+                <input type="text" id="nombre" [(ngModel)]="nuevoUsuario.nombre" name="nombre" required placeholder="Ingrese el nombre completo" />
               </div>
 
               <div class="form-group">
                 <label for="email">Email:</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  [(ngModel)]="nuevoUsuario.email" 
-                  name="email"
-                  required
-                  placeholder="usuario@ejemplo.com"
-                />
+                <input type="email" id="email" [(ngModel)]="nuevoUsuario.email" name="email" required placeholder="usuario@ejemplo.com" />
               </div>
 
               <div class="form-group">
                 <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-                <input 
-                  type="date" 
-                  id="fecha_nacimiento" 
-                  [(ngModel)]="nuevoUsuario.fecha_nacimiento" 
-                  name="fecha_nacimiento"
-                  required
-                />
+                <input type="date" id="fecha_nacimiento" [(ngModel)]="nuevoUsuario.fecha_nacimiento" name="fecha_nacimiento" />
               </div>
 
               <div class="form-group checkbox-group">
                 <label>
-                  <input 
-                    type="checkbox" 
-                    [(ngModel)]="nuevoUsuario.consentimiento_privacidad" 
-                    name="consentimiento_privacidad"
-                  />
+                  <input type="checkbox" [(ngModel)]="nuevoUsuario.consentimiento_privacidad" name="consentimiento_privacidad" />
                   <span>Acepto el consentimiento de privacidad</span>
                 </label>
               </div>
 
-              <button type="submit" class="btn-submit" [disabled]="enviando">
-                {{ enviando ? 'Creando...' : 'Crear Usuario' }}
-              </button>
+              <button class="btn-submit" type="submit" [disabled]="enviando">{{ enviando ? 'Creando...' : 'Crear Usuario' }}</button>
             </form>
 
             <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
@@ -456,14 +97,8 @@
           <!-- Tabla de Usuarios -->
           <div class="table-section">
             <h3>Lista de Usuarios</h3>
-            
-            <div *ngIf="cargandoUsuarios" class="loading">
-              Cargando usuarios...
-            </div>
-
-            <div *ngIf="!cargandoUsuarios && usuarios.length === 0" class="empty-state">
-              No hay usuarios registrados
-            </div>
+            <div *ngIf="cargandoUsuarios" class="loading">Cargando usuarios...</div>
+            <div *ngIf="!cargandoUsuarios && usuarios.length === 0" class="empty-state">No hay usuarios registrados</div>
 
             <table *ngIf="!cargandoUsuarios && usuarios.length > 0" class="usuarios-table">
               <thead>
@@ -533,34 +168,21 @@
         </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'perfiles'">
+      <!-- Panel: Perfiles -->
+      <div class="panel" *ngIf="activeTab==='perfiles'">
         <h2>Gestión de Perfiles</h2>
         <div class="usuarios-container">
-          <!-- Formulario Perfil -->
           <div class="form-section">
             <h3>Crear Perfil</h3>
             <form (ngSubmit)="crearPerfil()" class="user-form">
               <div class="form-group">
                 <label for="usuario_id">Usuario ID *</label>
-                <input 
-                  type="number" 
-                  id="usuario_id" 
-                  [(ngModel)]="nuevoPerfil.usuario_id" 
-                  name="usuario_id"
-                  required
-                  placeholder="ID del usuario"
-                />
+                <input type="number" id="usuario_id" [(ngModel)]="nuevoPerfil.usuario_id" name="usuario_id" required placeholder="ID del usuario" />
               </div>
 
               <div class="form-group">
                 <label for="objetivo">Objetivo</label>
-                <input 
-                  type="text" 
-                  id="objetivo" 
-                  [(ngModel)]="nuevoPerfil.objetivo" 
-                  name="objetivo"
-                  placeholder="p.ej. Bajar peso"
-                />
+                <input type="text" id="objetivo" [(ngModel)]="nuevoPerfil.objetivo" name="objetivo" placeholder="p.ej. Bajar peso" />
               </div>
 
               <div class="form-group">
@@ -575,13 +197,7 @@
 
               <div class="form-group">
                 <label for="altura">Altura (cm)</label>
-                <input 
-                  type="number" 
-                  id="altura" 
-                  [(ngModel)]="nuevoPerfil.altura" 
-                  name="altura"
-                  placeholder="170"
-                />
+                <input type="number" id="altura" [(ngModel)]="nuevoPerfil.altura" name="altura" placeholder="170" />
               </div>
 
               <div class="form-group">
@@ -593,30 +209,18 @@
                 </select>
               </div>
 
-              <button type="submit" class="btn-submit" [disabled]="guardandoPerfil || !nuevoPerfil.usuario_id">
-                {{ guardandoPerfil ? 'Creando...' : 'Crear Perfil' }}
-              </button>
+              <button class="btn-submit" type="submit" [disabled]="guardandoPerfil || !nuevoPerfil.usuario_id">{{ guardandoPerfil ? 'Creando...' : 'Crear Perfil' }}</button>
             </form>
-
-            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
-              {{ mensaje }}
-            </div>
           </div>
 
-          <!-- Tabla de Perfiles -->
           <div class="table-section">
             <div class="list-header" style="display:flex;align-items:center;gap:8px;">
               <h3 style="margin:0;flex:1;">Lista de Perfiles</h3>
-              <button class="btn-mini" (click)="cargarPerfiles()" [disabled]="cargandoPerfiles">🔄</button>
+              <button class="btn-mini" (click)="cargarPerfiles()" [disabled]="cargandoPerfiles">Recargar</button>
             </div>
 
-            <div *ngIf="cargandoPerfiles" class="loading">
-              Cargando perfiles...
-            </div>
-
-            <div *ngIf="!cargandoPerfiles && perfiles.length === 0" class="empty-state">
-              No hay perfiles registrados
-            </div>
+            <div *ngIf="cargandoPerfiles" class="loading">Cargando perfiles...</div>
+            <div *ngIf="!cargandoPerfiles && perfiles.length === 0" class="empty-state">No hay perfiles registrados</div>
 
             <table *ngIf="!cargandoPerfiles && perfiles.length > 0" class="usuarios-table">
               <thead>
@@ -689,91 +293,50 @@
         </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'actividades'">
+      <!-- Panel: Actividades -->
+      <div class="panel" *ngIf="activeTab==='actividades'">
         <h2>Registro de Actividades</h2>
         <div class="usuarios-container">
-          <!-- Formulario Actividad -->
           <div class="form-section">
             <h3>Crear Actividad</h3>
             <form (ngSubmit)="crearActividad()" class="user-form">
               <div class="form-group">
                 <label for="act_usuario_id">Usuario ID *</label>
-                <input 
-                  type="number" 
-                  id="act_usuario_id" 
-                  [(ngModel)]="nuevaActividad.usuario_id" 
-                  name="act_usuario_id"
-                  required
-                  placeholder="ID del usuario"
-                />
+                <input type="number" id="act_usuario_id" [(ngModel)]="nuevaActividad.usuario_id" name="act_usuario_id" required placeholder="ID del usuario" />
               </div>
 
               <div class="form-group">
                 <label for="tipo">Tipo</label>
-                <input 
-                  type="text" 
-                  id="tipo" 
-                  [(ngModel)]="nuevaActividad.tipo" 
-                  name="tipo"
-                  placeholder="p.ej. Correr, Caminar"
-                />
+                <input type="text" id="tipo" [(ngModel)]="nuevaActividad.tipo" name="tipo" placeholder="p.ej. Correr, Caminar" />
               </div>
 
               <div class="form-group">
                 <label for="hora_inicio">Hora Inicio</label>
-                <input 
-                  type="datetime-local" 
-                  id="hora_inicio" 
-                  [(ngModel)]="nuevaActividad.hora_inicio" 
-                  name="hora_inicio"
-                />
+                <input type="datetime-local" id="hora_inicio" [(ngModel)]="nuevaActividad.hora_inicio" name="hora_inicio" />
               </div>
 
               <div class="form-group">
                 <label for="hora_fin">Hora Fin</label>
-                <input 
-                  type="datetime-local" 
-                  id="hora_fin" 
-                  [(ngModel)]="nuevaActividad.hora_fin" 
-                  name="hora_fin"
-                />
+                <input type="datetime-local" id="hora_fin" [(ngModel)]="nuevaActividad.hora_fin" name="hora_fin" />
               </div>
 
               <div class="form-group">
                 <label for="duracion_segundos">Duración (segundos)</label>
-                <input 
-                  type="number" 
-                  id="duracion_segundos" 
-                  [(ngModel)]="nuevaActividad.duracion_segundos" 
-                  name="duracion_segundos"
-                  placeholder="Opcional si se provee inicio/fin"
-                />
+                <input type="number" id="duracion_segundos" [(ngModel)]="nuevaActividad.duracion_segundos" name="duracion_segundos" placeholder="Opcional si se provee inicio/fin" />
               </div>
 
-              <button type="submit" class="btn-submit" [disabled]="guardandoActividad || !nuevaActividad.usuario_id">
-                {{ guardandoActividad ? 'Creando...' : 'Crear Actividad' }}
-              </button>
+              <button class="btn-submit" type="submit" [disabled]="guardandoActividad || !nuevaActividad.usuario_id">{{ guardandoActividad ? 'Creando...' : 'Crear Actividad' }}</button>
             </form>
-
-            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
-              {{ mensaje }}
-            </div>
           </div>
 
-          <!-- Tabla de Actividades -->
           <div class="table-section">
             <div class="list-header" style="display:flex;align-items:center;gap:8px;">
               <h3 style="margin:0;flex:1;">Lista de Actividades</h3>
-              <button class="btn-mini" (click)="cargarActividades()" [disabled]="cargandoActividades">🔄</button>
+              <button class="btn-mini" (click)="cargarActividades()" [disabled]="cargandoActividades">Recargar</button>
             </div>
 
-            <div *ngIf="cargandoActividades" class="loading">
-              Cargando actividades...
-            </div>
-
-            <div *ngIf="!cargandoActividades && actividades.length === 0" class="empty-state">
-              No hay actividades registradas
-            </div>
+            <div *ngIf="cargandoActividades" class="loading">Cargando actividades...</div>
+            <div *ngIf="!cargandoActividades && actividades.length === 0" class="empty-state">No hay actividades registradas</div>
 
             <table *ngIf="!cargandoActividades && actividades.length > 0" class="usuarios-table">
               <thead>
@@ -837,93 +400,50 @@
         </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'dispositivos'">
+      <!-- Panel: Dispositivos -->
+      <div class="panel" *ngIf="activeTab==='dispositivos'">
         <h2>Dispositivos Conectados</h2>
         <div class="usuarios-container">
-          <!-- Formulario Dispositivo -->
           <div class="form-section">
             <h3>Crear Dispositivo</h3>
             <form (ngSubmit)="crearDispositivo()" class="user-form">
               <div class="form-group">
                 <label for="disp_usuario_id">Usuario ID *</label>
-                <input 
-                  type="number" 
-                  id="disp_usuario_id" 
-                  [(ngModel)]="nuevoDispositivo.usuario_id" 
-                  name="disp_usuario_id"
-                  required
-                  placeholder="ID del usuario"
-                />
+                <input type="number" id="disp_usuario_id" [(ngModel)]="nuevoDispositivo.usuario_id" name="disp_usuario_id" required placeholder="ID del usuario" />
               </div>
 
               <div class="form-group">
                 <label for="serial">Serial *</label>
-                <input 
-                  type="text" 
-                  id="serial" 
-                  [(ngModel)]="nuevoDispositivo.serial" 
-                  name="serial"
-                  required
-                  placeholder="Número de serie único"
-                />
+                <input type="text" id="serial" [(ngModel)]="nuevoDispositivo.serial" name="serial" required placeholder="Número de serie único" />
               </div>
 
               <div class="form-group">
                 <label for="marca">Marca</label>
-                <input 
-                  type="text" 
-                  id="marca" 
-                  [(ngModel)]="nuevoDispositivo.marca" 
-                  name="marca"
-                  placeholder="p.ej. Fitbit, Garmin"
-                />
+                <input type="text" id="marca" [(ngModel)]="nuevoDispositivo.marca" name="marca" placeholder="p.ej. Fitbit, Garmin" />
               </div>
 
               <div class="form-group">
                 <label for="modelo">Modelo</label>
-                <input 
-                  type="text" 
-                  id="modelo" 
-                  [(ngModel)]="nuevoDispositivo.modelo" 
-                  name="modelo"
-                  placeholder="p.ej. Charge 5"
-                />
+                <input type="text" id="modelo" [(ngModel)]="nuevoDispositivo.modelo" name="modelo" placeholder="p.ej. Charge 5" />
               </div>
 
               <div class="form-group">
                 <label for="fecha_vinculacion">Fecha Vinculación</label>
-                <input 
-                  type="date" 
-                  id="fecha_vinculacion" 
-                  [(ngModel)]="nuevoDispositivo.fecha_vinculacion" 
-                  name="fecha_vinculacion"
-                />
+                <input type="date" id="fecha_vinculacion" [(ngModel)]="nuevoDispositivo.fecha_vinculacion" name="fecha_vinculacion" />
               </div>
 
-              <button type="submit" class="btn-submit" [disabled]="guardandoDispositivo || !nuevoDispositivo.usuario_id || !nuevoDispositivo.serial">
-                {{ guardandoDispositivo ? 'Creando...' : 'Crear Dispositivo' }}
-              </button>
+              <button class="btn-submit" type="submit" [disabled]="guardandoDispositivo || !nuevoDispositivo.usuario_id || !nuevoDispositivo.serial">{{ guardandoDispositivo ? 'Creando...' : 'Crear Dispositivo' }}</button>
             </form>
-
-            <div *ngIf="mensaje" class="mensaje" [class.error]="mensajeError" [class.success]="!mensajeError">
-              {{ mensaje }}
-            </div>
           </div>
 
-          <!-- Tabla de Dispositivos -->
           <div class="table-section">
             <div class="list-header" style="display:flex;align-items:center;gap:8px;">
               <h3 style="margin:0;flex:1;">Lista de Dispositivos</h3>
-              <button class="btn-mini" (click)="cargarDispositivos()" [disabled]="cargandoDispositivos">🔄</button>
+              <button class="btn-mini" (click)="cargarDispositivos()" [disabled]="cargandoDispositivos">Recargar</button>
             </div>
 
-            <div *ngIf="cargandoDispositivos" class="loading">
-              Cargando dispositivos...
-            </div>
-
-            <div *ngIf="!cargandoDispositivos && dispositivos.length === 0" class="empty-state">
-              No hay dispositivos registrados
-            </div>
+            <div *ngIf="cargandoDispositivos" class="loading">Cargando dispositivos...</div>
+            <div *ngIf="!cargandoDispositivos && dispositivos.length === 0" class="empty-state">No hay dispositivos registrados</div>
 
             <table *ngIf="!cargandoDispositivos && dispositivos.length > 0" class="usuarios-table">
               <thead>
@@ -987,14 +507,15 @@
         </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'reportes'">
+      <!-- Panel: Reportes -->
+      <div class="panel" *ngIf="activeTab==='reportes'">
         <h2>Generación de Reportes</h2>
         <div class="reportes-container">
           <div class="reportes-descripcion">
-            <p>Esta sección permite generar un reporte consolidado en formato PDF que incluye un análisis completo de los datos de la plataforma.</p>
-            <p>Al hacer clic en el botón "Generar Reporte PDF", se compilarán los siguientes informes:</p>
+            <p><strong>Información:</strong> Genera un reporte PDF consolidado con análisis de sensores, retos y tendencias.</p>
+            <p>Incluye los siguientes informes:</p>
           </div>
-          
+
           <div class="reportes-lista">
             <div *ngFor="let reporte of reportes" class="reporte-item">
               <span class="reporte-titulo">{{ reporte.titulo }}</span>
@@ -1002,18 +523,100 @@
             </div>
           </div>
 
-          <div class="reportes-accion">
-            <button class="btn-submit" (click)="generarReportePDF()" [disabled]="generandoReporte">
-              {{ generandoReporte ? 'Generando PDF...' : 'Generar Reporte PDF' }}
-            </button>
+          <div class="reportes-accion" style="margin-top:12px;">
+            <button class="btn-submit" (click)="generarReportePDF()" [disabled]="generandoReporte">{{ generandoReporte ? 'Generando PDF...' : 'Generar Reporte PDF' }}</button>
           </div>
         </div>
       </div>
 
-      <div class="panel" *ngIf="activeTab === 'estadisticas'">
-        <h2>Estadísticas</h2>
-        <div class="empty-state">
-          <p>Próximamente: Gráficos y visualizaciones de datos.</p>
+      <!-- Panel: Estadísticas -->
+      <div class="panel" *ngIf="activeTab==='estadisticas'">
+        <h2>Estadísticas del Sistema</h2>
+        
+        <div *ngIf="cargandoEstadisticas" class="loading">Cargando estadísticas...</div>
+
+        <div *ngIf="!cargandoEstadisticas" class="estadisticas-grid">
+          <!-- Métricas Generales -->
+          <div class="estadistica-seccion">
+            <h3>Métricas Generales</h3>
+            <div class="estadistica-cards">
+              <div class="estadistica-card">
+                <div class="estadistica-icono">👥</div>
+                <div class="estadistica-valor">{{ estadisticas.totalUsuarios }}</div>
+                <div class="estadistica-label">Total Usuarios</div>
+              </div>
+
+              <div class="estadistica-card">
+                <div class="estadistica-icono">📊</div>
+                <div class="estadistica-valor">{{ estadisticas.totalPerfiles }}</div>
+                <div class="estadistica-label">Perfiles de Salud</div>
+              </div>
+
+              <div class="estadistica-card">
+                <div class="estadistica-icono">🏃</div>
+                <div class="estadistica-valor">{{ estadisticas.totalActividades }}</div>
+                <div class="estadistica-label">Total Actividades</div>
+              </div>
+
+              <div class="estadistica-card">
+                <div class="estadistica-icono">⌚</div>
+                <div class="estadistica-valor">{{ estadisticas.totalDispositivos }}</div>
+                <div class="estadistica-label">Dispositivos Vinculados</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actividad Reciente -->
+          <div class="estadistica-seccion">
+            <h3>Actividad Reciente</h3>
+            <div class="estadistica-cards">
+              <div class="estadistica-card highlight-success">
+                <div class="estadistica-icono">📅</div>
+                <div class="estadistica-valor">{{ estadisticas.actividadesHoy }}</div>
+                <div class="estadistica-label">Actividades Hoy</div>
+              </div>
+
+              <div class="estadistica-card highlight-info">
+                <div class="estadistica-icono">📈</div>
+                <div class="estadistica-valor">{{ estadisticas.actividadesSemana }}</div>
+                <div class="estadistica-label">Actividades (7 días)</div>
+              </div>
+
+              <div class="estadistica-card highlight-warning">
+                <div class="estadistica-icono">🔗</div>
+                <div class="estadistica-valor">{{ estadisticas.dispositivosActivos }}</div>
+                <div class="estadistica-label">Dispositivos Activos (30 días)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicadores de Rendimiento -->
+          <div class="estadistica-seccion">
+            <h3>Indicadores de Rendimiento</h3>
+            <div class="estadistica-tabla">
+              <div class="estadistica-fila">
+                <span class="estadistica-metrica">Promedio de Actividades por Usuario</span>
+                <span class="estadistica-resultado">{{ estadisticas.promedioActividadesPorUsuario }}</span>
+              </div>
+              <div class="estadistica-fila">
+                <span class="estadistica-metrica">Tasa de Perfiles Creados</span>
+                <span class="estadistica-resultado">{{ estadisticas.totalUsuarios > 0 ? ((estadisticas.totalPerfiles / estadisticas.totalUsuarios) * 100).toFixed(1) : 0 }}%</span>
+              </div>
+              <div class="estadistica-fila">
+                <span class="estadistica-metrica">Usuarios con Dispositivos</span>
+                <span class="estadistica-resultado">{{ estadisticas.totalDispositivos }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acción -->
+          <div class="estadistica-seccion">
+            <div style="text-align:center;margin-top:24px;">
+              <button class="btn-submit" (click)="cargarEstadisticas()" [disabled]="cargandoEstadisticas">
+                {{ cargandoEstadisticas ? 'Actualizando...' : 'Actualizar Estadísticas' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1022,15 +625,14 @@
 })
 export class AppComponent implements OnInit {
   activeTab: string = 'usuarios';
+
   enviando: boolean = false;
   mensaje: string = '';
   mensajeError: boolean = false;
   cargandoUsuarios: boolean = false;
   usuarios: UsuarioResponse[] = [];
   private readonly API_URL = 'http://localhost:4000';
-  
-  // PrimeNG MessageService reemplaza el sistema de notificaciones
-  
+
   // Perfiles state
   cargandoPerfiles: boolean = false;
   perfiles: any[] = [];
@@ -1038,6 +640,8 @@ export class AppComponent implements OnInit {
   editandoPerfilId: number | null = null;
   editBufferPerfil: any = {};
   guardandoPerfil: boolean = false;
+
+  // Usuarios edit state
   editandoId: number | null = null;
   editBuffer: any = {};
   guardando: boolean = false;
@@ -1061,16 +665,16 @@ export class AppComponent implements OnInit {
   // Reportes state
   generandoReporte: boolean = false;
   reportes: any[] = [
-    { titulo: 'Últimos 10 Usuarios Registrados', dificultad: 'Simple' },
-    { titulo: 'Última Lectura de Sensor de Frecuencia Cardíaca', dificultad: 'Simple' },
-    { titulo: 'Cantidad de Sensores por Dispositivo', dificultad: 'Simple' },
-    { titulo: 'Promedio Diario de Lecturas por Sensor (7 días)', dificultad: 'Intermedio' },
-    { titulo: 'Listado Completo de Sensores con Dispositivo y Usuario', dificultad: 'Intermedio' },
-    { titulo: 'Usuarios en Retos Activos con Progreso', dificultad: 'Intermedio' },
-    { titulo: 'Resumen Diario Actualizado (UPSERT)', dificultad: 'Intermedio' },
-    { titulo: 'Usuarios con Lecturas Sobre el Umbral (30 días)', dificultad: 'Complejo' },
-    { titulo: 'Media Móvil de 7 Días para Lecturas', dificultad: 'Complejo' },
-    { titulo: 'Top 5 Usuarios con Mayor Incremento en Lecturas', dificultad: 'Complejo' },
+    { titulo: '1. Últimos 10 Usuarios Registrados - Historial de inscripciones recientes en el sistema', dificultad: 'Simple' },
+    { titulo: '2. Última Lectura de Sensor de Frecuencia Cardíaca - Monitoreo en tiempo real del sensor cardíaco', dificultad: 'Simple' },
+    { titulo: '3. Cantidad de Sensores por Dispositivo - Inventario de sensores disponibles por cada dispositivo', dificultad: 'Simple' },
+    { titulo: '4. Promedio Diario de Lecturas por Sensor (7 días) - Tendencias semanales de mediciones', dificultad: 'Intermedio' },
+    { titulo: '5. Listado Completo de Sensores con Dispositivo y Usuario - Catálogo detallado con propietarios', dificultad: 'Intermedio' },
+    { titulo: '6. Usuarios en Retos Activos con Progreso - Estado de avance en desafíos de salud', dificultad: 'Intermedio' },
+    { titulo: '7. Resumen Diario Actualizado (UPSERT) - Consolidado automático de métricas diarias', dificultad: 'Intermedio' },
+    { titulo: '8. Usuarios con Lecturas Sobre el Umbral (30 días) - Alertas de valores críticos detectados', dificultad: 'Complejo' },
+    { titulo: '9. Media Móvil de 7 Días para Lecturas - Análisis de tendencia con suavizado temporal', dificultad: 'Complejo' },
+    { titulo: '10. Top 5 Usuarios con Mayor Incremento en Lecturas - Ranking de mejoras en mediciones', dificultad: 'Complejo' },
   ];
 
   nuevoUsuario: Usuario = {
@@ -1081,14 +685,30 @@ export class AppComponent implements OnInit {
     consentimiento_privacidad: false
   };
 
-  constructor(private http: HttpClient, private messageService: MessageService, private confirmationService: ConfirmationService) {}
+  // Notificaciones
+  notificaciones: Array<{ id: number; tipo: 'success' | 'error' | 'warning' | 'info'; titulo: string; mensaje: string; closing?: boolean }> = [];
+  private notifSeq = 0;
+
+  // Estadísticas state
+  cargandoEstadisticas: boolean = false;
+  estadisticas: any = {
+    totalUsuarios: 0,
+    totalPerfiles: 0,
+    totalActividades: 0,
+    totalDispositivos: 0,
+    actividadesHoy: 0,
+    actividadesSemana: 0,
+    dispositivosActivos: 0,
+    promedioActividadesPorUsuario: 0
+  };
+
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.cargarUsuarios();
   }
 
-  onTabChange(index: number): void {
-    const tab = this.tabOrder[index] || 'usuarios';
+  setTab(tab: string): void {
     this.activeTab = tab;
     if (tab === 'usuarios') {
       this.cargarUsuarios();
@@ -1098,21 +718,20 @@ export class AppComponent implements OnInit {
       this.cargarActividades();
     } else if (tab === 'dispositivos') {
       this.cargarDispositivos();
-    } else if (tab === 'reportes') {
-      // No se necesita cargar nada al seleccionar la pestaña
+    } else if (tab === 'estadisticas') {
+      this.cargarEstadisticas();
     }
   }
 
+  // -------- USUARIOS ---------
   cargarUsuarios(): void {
     this.cargandoUsuarios = true;
     this.http.get<UsuarioResponse[]>(`${this.API_URL}/api/usuarios`).subscribe({
       next: (response) => {
-        console.log('Usuarios cargados:', response);
         this.usuarios = response;
         this.cargandoUsuarios = false;
       },
       error: (error) => {
-        console.error('Error al cargar usuarios:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoUsuarios = false;
@@ -1123,27 +742,14 @@ export class AppComponent implements OnInit {
   crearUsuario(): void {
     this.enviando = true;
     this.mensaje = '';
-
-    console.log('Enviando datos:', this.nuevoUsuario);
-
     this.http.post(`${this.API_URL}/api/usuarios`, this.nuevoUsuario).subscribe({
-      next: (response) => {
-        console.log('Usuario creado exitosamente:', response);
+      next: () => {
         this.mostrarNotificacion('success', 'Usuario creado', `El usuario ${this.nuevoUsuario.nombre} ha sido registrado exitosamente.`);
         this.enviando = false;
-        // Limpiar formulario
-        this.nuevoUsuario = {
-          cedula: '',
-          nombre: '',
-          email: '',
-          fecha_nacimiento: '',
-          consentimiento_privacidad: false
-        };
-        // Recargar la tabla
+        this.nuevoUsuario = { cedula: '', nombre: '', email: '', fecha_nacimiento: '', consentimiento_privacidad: false };
         this.cargarUsuarios();
       },
       error: (error) => {
-        console.error('Error al crear usuario:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.enviando = false;
@@ -1184,7 +790,6 @@ export class AppComponent implements OnInit {
 
   guardarEdicion(id: number): void {
     if (this.editandoId !== id) return;
-    // Validaciones básicas
     if (!this.editBuffer.nombre || !this.editBuffer.email) {
       this.mostrarNotificacion('warning', 'Campos requeridos', 'Nombre y Email son obligatorios para actualizar el usuario.');
       return;
@@ -1210,7 +815,6 @@ export class AppComponent implements OnInit {
         this.cargarUsuarios();
       },
       error: (error) => {
-        console.error('Error actualizando usuario:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardando = false;
@@ -1219,30 +823,22 @@ export class AppComponent implements OnInit {
   }
 
   eliminarUsuario(id: number): void {
-    this.confirmationService.confirm({
-      message: '¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.',
-      header: 'Confirmación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => {
-        this.guardando = true;
-        this.http.delete(`${this.API_URL}/api/usuarios/${id}`).subscribe({
-          next: () => {
-            this.mostrarNotificacion('success', 'Usuario eliminado', 'El usuario ha sido eliminado del sistema.');
-            this.guardando = false;
-            if (this.editandoId === id) this.cancelarEdicion();
-            this.cargarUsuarios();
-          },
-          error: (error) => {
-            console.error('Error eliminando usuario:', error);
-            const { titulo, mensaje } = this.obtenerMensajeError(error);
-            this.mostrarNotificacion('error', titulo, mensaje);
-            this.guardando = false;
-          }
-        });
-      }
-    });
+    if (confirm('¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.')) {
+      this.guardando = true;
+      this.http.delete(`${this.API_URL}/api/usuarios/${id}`).subscribe({
+        next: () => {
+          this.mostrarNotificacion('success', 'Usuario eliminado', 'El usuario ha sido eliminado del sistema.');
+          this.guardando = false;
+          if (this.editandoId === id) this.cancelarEdicion();
+          this.cargarUsuarios();
+        },
+        error: (error) => {
+          const { titulo, mensaje } = this.obtenerMensajeError(error);
+          this.mostrarNotificacion('error', titulo, mensaje);
+          this.guardando = false;
+        }
+      });
+    }
   }
 
   // -------- PERFILES ---------
@@ -1254,7 +850,6 @@ export class AppComponent implements OnInit {
         this.cargandoPerfiles = false;
       },
       error: (error) => {
-        console.error('Error cargando perfiles:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoPerfiles = false;
@@ -1282,7 +877,6 @@ export class AppComponent implements OnInit {
         this.cargarPerfiles();
       },
       error: (error) => {
-        console.error('Error creando perfil:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoPerfil = false;
@@ -1327,7 +921,6 @@ export class AppComponent implements OnInit {
         this.cargarPerfiles();
       },
       error: (error) => {
-        console.error('Error actualizando perfil:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoPerfil = false;
@@ -1336,30 +929,22 @@ export class AppComponent implements OnInit {
   }
 
   eliminarPerfil(perfilId: number): void {
-    this.confirmationService.confirm({
-      message: '¿Eliminar este perfil?',
-      header: 'Confirmación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => {
-        this.guardandoPerfil = true;
-        this.http.delete(`${this.API_URL}/api/perfiles/${perfilId}`).subscribe({
-          next: () => {
-            this.mostrarNotificacion('success', 'Perfil eliminado', 'El perfil de salud ha sido eliminado del sistema.');
-            this.guardandoPerfil = false;
-            if (this.editandoPerfilId === perfilId) this.cancelarEdicionPerfil();
-            this.cargarPerfiles();
-          },
-          error: (error) => {
-            console.error('Error eliminando perfil:', error);
-            const { titulo, mensaje } = this.obtenerMensajeError(error);
-            this.mostrarNotificacion('error', titulo, mensaje);
-            this.guardandoPerfil = false;
-          }
-        });
-      }
-    });
+    if (confirm('¿Eliminar este perfil?')) {
+      this.guardandoPerfil = true;
+      this.http.delete(`${this.API_URL}/api/perfiles/${perfilId}`).subscribe({
+        next: () => {
+          this.mostrarNotificacion('success', 'Perfil eliminado', 'El perfil de salud ha sido eliminado del sistema.');
+          this.guardandoPerfil = false;
+          if (this.editandoPerfilId === perfilId) this.cancelarEdicionPerfil();
+          this.cargarPerfiles();
+        },
+        error: (error) => {
+          const { titulo, mensaje } = this.obtenerMensajeError(error);
+          this.mostrarNotificacion('error', titulo, mensaje);
+          this.guardandoPerfil = false;
+        }
+      });
+    }
   }
 
   // -------- ACTIVIDADES ---------
@@ -1371,7 +956,6 @@ export class AppComponent implements OnInit {
         this.cargandoActividades = false;
       },
       error: (error) => {
-        console.error('Error cargando actividades:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoActividades = false;
@@ -1399,7 +983,6 @@ export class AppComponent implements OnInit {
         this.cargarActividades();
       },
       error: (error) => {
-        console.error('Error creando actividad:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoActividad = false;
@@ -1444,7 +1027,6 @@ export class AppComponent implements OnInit {
         this.cargarActividades();
       },
       error: (error) => {
-        console.error('Error actualizando actividad:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoActividad = false;
@@ -1453,30 +1035,22 @@ export class AppComponent implements OnInit {
   }
 
   eliminarActividad(actividadId: number): void {
-    this.confirmationService.confirm({
-      message: '¿Eliminar esta actividad?',
-      header: 'Confirmación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => {
-        this.guardandoActividad = true;
-        this.http.delete(`${this.API_URL}/api/actividades/${actividadId}`).subscribe({
-          next: () => {
-            this.mostrarNotificacion('success', 'Actividad eliminada', 'La actividad ha sido eliminada del registro.');
-            this.guardandoActividad = false;
-            if (this.editandoActividadId === actividadId) this.cancelarEdicionActividad();
-            this.cargarActividades();
-          },
-          error: (error) => {
-            console.error('Error eliminando actividad:', error);
-            const { titulo, mensaje } = this.obtenerMensajeError(error);
-            this.mostrarNotificacion('error', titulo, mensaje);
-            this.guardandoActividad = false;
-          }
-        });
-      }
-    });
+    if (confirm('¿Eliminar esta actividad?')) {
+      this.guardandoActividad = true;
+      this.http.delete(`${this.API_URL}/api/actividades/${actividadId}`).subscribe({
+        next: () => {
+          this.mostrarNotificacion('success', 'Actividad eliminada', 'La actividad ha sido eliminada del registro.');
+          this.guardandoActividad = false;
+          if (this.editandoActividadId === actividadId) this.cancelarEdicionActividad();
+          this.cargarActividades();
+        },
+        error: (error) => {
+          const { titulo, mensaje } = this.obtenerMensajeError(error);
+          this.mostrarNotificacion('error', titulo, mensaje);
+          this.guardandoActividad = false;
+        }
+      });
+    }
   }
 
   // -------- DISPOSITIVOS ---------
@@ -1488,7 +1062,6 @@ export class AppComponent implements OnInit {
         this.cargandoDispositivos = false;
       },
       error: (error) => {
-        console.error('Error cargando dispositivos:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.cargandoDispositivos = false;
@@ -1516,7 +1089,6 @@ export class AppComponent implements OnInit {
         this.cargarDispositivos();
       },
       error: (error) => {
-        console.error('Error creando dispositivo:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoDispositivo = false;
@@ -1561,7 +1133,6 @@ export class AppComponent implements OnInit {
         this.cargarDispositivos();
       },
       error: (error) => {
-        console.error('Error actualizando dispositivo:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, mensaje);
         this.guardandoDispositivo = false;
@@ -1570,30 +1141,22 @@ export class AppComponent implements OnInit {
   }
 
   eliminarDispositivo(dispositivoId: number): void {
-    this.confirmationService.confirm({
-      message: '¿Eliminar este dispositivo?',
-      header: 'Confirmación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí',
-      rejectLabel: 'No',
-      accept: () => {
-        this.guardandoDispositivo = true;
-        this.http.delete(`${this.API_URL}/api/dispositivos/${dispositivoId}`).subscribe({
-          next: () => {
-            this.mostrarNotificacion('success', 'Dispositivo eliminado', 'El dispositivo ha sido desvinculado del sistema.');
-            this.guardandoDispositivo = false;
-            if (this.editandoDispositivoId === dispositivoId) this.cancelarEdicionDispositivo();
-            this.cargarDispositivos();
-          },
-          error: (error) => {
-            console.error('Error eliminando dispositivo:', error);
-            const { titulo, mensaje } = this.obtenerMensajeError(error);
-            this.mostrarNotificacion('error', titulo, mensaje);
-            this.guardandoDispositivo = false;
-          }
-        });
-      }
-    });
+    if (confirm('¿Eliminar este dispositivo?')) {
+      this.guardandoDispositivo = true;
+      this.http.delete(`${this.API_URL}/api/dispositivos/${dispositivoId}`).subscribe({
+        next: () => {
+          this.mostrarNotificacion('success', 'Dispositivo eliminado', 'El dispositivo ha sido desvinculado del sistema.');
+          this.guardandoDispositivo = false;
+          if (this.editandoDispositivoId === dispositivoId) this.cancelarEdicionDispositivo();
+          this.cargarDispositivos();
+        },
+        error: (error) => {
+          const { titulo, mensaje } = this.obtenerMensajeError(error);
+          this.mostrarNotificacion('error', titulo, mensaje);
+          this.guardandoDispositivo = false;
+        }
+      });
+    }
   }
 
   // Helper para formatear datetime-local input
@@ -1609,10 +1172,24 @@ export class AppComponent implements OnInit {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
-  // -------- NOTIFICACIONES (PrimeNG Toast) ---------
+  // -------- NOTIFICACIONES (Personalizadas) ---------
   mostrarNotificacion(tipo: 'success' | 'error' | 'warning' | 'info', titulo: string, mensaje: string): void {
-    const severityMap: any = { success: 'success', error: 'error', warning: 'warn', info: 'info' };
-    this.messageService.add({ severity: severityMap[tipo] || 'info', summary: titulo, detail: mensaje, life: 4000 });
+    const id = ++this.notifSeq;
+    this.notificaciones = [...this.notificaciones, { id, tipo, titulo, mensaje }];
+    setTimeout(() => this.cerrarNotificacion(id), 4000);
+  }
+
+  cerrarNotificacion(id: number): void {
+    const idx = this.notificaciones.findIndex(n => n.id === id);
+    if (idx === -1) return;
+    this.notificaciones[idx].closing = true;
+    setTimeout(() => {
+      this.notificaciones = this.notificaciones.filter(n => n.id !== id);
+    }, 280);
+  }
+
+  iconoNotificacion(tipo: 'success' | 'error' | 'warning' | 'info'): string {
+    return tipo === 'success' ? '✓' : tipo === 'error' ? '⚠' : tipo === 'warning' ? '!' : 'ℹ';
   }
 
   // Helper para parsear errores del backend
@@ -1644,6 +1221,66 @@ export class AppComponent implements OnInit {
     return { titulo, mensaje };
   }
 
+  // -------- ESTADÍSTICAS ---------
+  cargarEstadisticas(): void {
+    this.cargandoEstadisticas = true;
+    
+    // Cargar todas las métricas en paralelo
+    Promise.all([
+      this.http.get<any[]>(`${this.API_URL}/api/usuarios`).toPromise(),
+      this.http.get<any[]>(`${this.API_URL}/api/perfiles`).toPromise(),
+      this.http.get<any[]>(`${this.API_URL}/api/actividades`).toPromise(),
+      this.http.get<any[]>(`${this.API_URL}/api/dispositivos`).toPromise()
+    ]).then(([usuarios, perfiles, actividades, dispositivos]) => {
+      this.estadisticas.totalUsuarios = usuarios?.length || 0;
+      this.estadisticas.totalPerfiles = perfiles?.length || 0;
+      this.estadisticas.totalActividades = actividades?.length || 0;
+      this.estadisticas.totalDispositivos = dispositivos?.length || 0;
+
+      // Calcular actividades de hoy
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      this.estadisticas.actividadesHoy = (actividades || []).filter((a: any) => {
+        if (!a.hora_inicio) return false;
+        const fecha = new Date(a.hora_inicio);
+        fecha.setHours(0, 0, 0, 0);
+        return fecha.getTime() === hoy.getTime();
+      }).length;
+
+      // Calcular actividades de la semana (últimos 7 días)
+      const hace7Dias = new Date();
+      hace7Dias.setDate(hace7Dias.getDate() - 7);
+      this.estadisticas.actividadesSemana = (actividades || []).filter((a: any) => {
+        if (!a.hora_inicio) return false;
+        const fecha = new Date(a.hora_inicio);
+        return fecha >= hace7Dias;
+      }).length;
+
+      // Contar dispositivos con fecha de vinculación reciente (últimos 30 días)
+      const hace30Dias = new Date();
+      hace30Dias.setDate(hace30Dias.getDate() - 30);
+      this.estadisticas.dispositivosActivos = (dispositivos || []).filter((d: any) => {
+        if (!d.fecha_vinculacion) return false;
+        const fecha = new Date(d.fecha_vinculacion);
+        return fecha >= hace30Dias;
+      }).length;
+
+      // Promedio de actividades por usuario
+      if (this.estadisticas.totalUsuarios > 0) {
+        this.estadisticas.promedioActividadesPorUsuario = 
+          (this.estadisticas.totalActividades / this.estadisticas.totalUsuarios).toFixed(1);
+      } else {
+        this.estadisticas.promedioActividadesPorUsuario = 0;
+      }
+
+      this.cargandoEstadisticas = false;
+    }).catch((error) => {
+      const { titulo, mensaje } = this.obtenerMensajeError(error);
+      this.mostrarNotificacion('error', titulo, 'Error al cargar estadísticas: ' + mensaje);
+      this.cargandoEstadisticas = false;
+    });
+  }
+
   // -------- REPORTES ---------
   generarReportePDF(): void {
     this.generandoReporte = true;
@@ -1651,22 +1288,17 @@ export class AppComponent implements OnInit {
       next: (blob) => {
         this.generandoReporte = false;
         this.mostrarNotificacion('success', 'Reporte Generado', 'El PDF se ha descargado exitosamente.');
-        
-        // Crear un enlace para descargar el archivo
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'reporte_vitaltrack.pdf';
         document.body.appendChild(a);
         a.click();
-        
-        // Limpiar
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       },
       error: (error) => {
         this.generandoReporte = false;
-        console.error('Error generando el reporte:', error);
         const { titulo, mensaje } = this.obtenerMensajeError(error);
         this.mostrarNotificacion('error', titulo, 'No se pudo generar el reporte PDF. ' + mensaje);
       }

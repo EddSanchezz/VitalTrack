@@ -7,10 +7,10 @@
 	"scripts": {
 		"start": "node scripts/setup-db.js && node src/server.js",
 		"dev": "npm run db:setup && nodemon --watch src --ext js --exec node src/server.js",
-		"test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",
+		"test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
 		"test:watch": "npm run test -- --watch",
 		"db:setup": "node scripts/setup-db.js",
-		"db:reset": "rm -f database.sqlite && npm run db:setup"
+		"db:reset": "node -e \"try{require('fs').unlinkSync('database.sqlite')}catch(e){}\" && npm run db:setup"
 	},
 	"dependencies": {
 		"cors": "^2.8.5",
@@ -23,7 +23,6 @@
 	},
 	"devDependencies": {
 		"jest": "^29.7.0",
-		"node-fetch": "^2.7.0",
 		"nodemon": "^3.1.7",
 		"supertest": "^6.3.3"
 	},
