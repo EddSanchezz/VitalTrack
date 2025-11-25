@@ -20,26 +20,13 @@ async function setupDatabase() {
 			const dbPath = join(__dirname, '..', dbFile);
 			
 			console.log('[setup-db] Using SQLite file:', dbPath);
-			const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE | sqlite3.OPEN_FULLMUTEX, (err) => {
+			const db = new sqlite3.Database(dbPath, (err) => {
 				if (err) {
 					console.error('Error creando SQLite:', err);
-					// En modo script salimos, en tests lanzamos error
-					if (import.meta.url === `file://${process.argv[1]}`) {
-						process.exit(1);
-					} else {
-						throw err;
-					}
+					process.exit(1);
 				}
 				// Archivo SQLite
 			});
-
-			// Configurar PRAGMAs para concurrencia en tests
-			await new Promise((resolve) => db.serialize(() => {
-				db.run("PRAGMA journal_mode = WAL");
-				db.run("PRAGMA synchronous = NORMAL");
-				db.run("PRAGMA foreign_keys = ON");
-				db.run("PRAGMA busy_timeout = 5000", resolve);
-			}));
 
 			// SQLite schema
 			const sqliteSchema = [

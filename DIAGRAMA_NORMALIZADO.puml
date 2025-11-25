@@ -1,0 +1,347 @@
+@startuml VitalTrack_Normalizado
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b><color:#b8861b><&key></color> x</b>
+!define foreign_key(x) <color:#aaaaaa><&key></color> x
+!define column(x) <color:#efefef><&media-record></color> x
+
+' Configuración de estilo
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor LightCyan
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+}
+
+title VitalTrack - Modelo Relacional Normalizado (3NF)\nBase de Datos SQLite
+
+' ==================== ENTIDADES PRINCIPALES ====================
+
+package "Gestión de Usuarios" {
+    class USUARIO {
+        primary_key(id): INTEGER
+        --
+        cedula: VARCHAR(20)
+        nombre: VARCHAR(100) {NOT NULL}
+        email: VARCHAR(120) {UNIQUE, NOT NULL}
+        fecha_registro: DATETIME {DEFAULT CURRENT_TIMESTAMP}
+        fecha_nacimiento: DATE
+        consentimiento_privacidad: BOOLEAN {DEFAULT 1}
+        --
+        **Normalización:**
+        • 1NF: Atributos atómicos
+        • 2NF: Dependencia total de PK
+        • 3NF: No dependencias transitivas
+    }
+
+    class PERFIL {
+        primary_key(id): INTEGER
+        --
+        foreign_key(usuario_id): INTEGER {NOT NULL}
+        objetivo: TEXT
+        sexo: VARCHAR(20)
+        altura: DECIMAL(5,2)
+        estado: VARCHAR(20)
+        --
+        **Normalización:**
+        • 1NF: Valores únicos por celda
+        • 2NF: Dependencia de PK compuesta eliminada
+        • 3NF: Separado de USUARIO para evitar NULLs
+    }
+}
+
+package "Dispositivos y Sensores IoT" {
+    class DISPOSITIVO {
+        primary_key(id): INTEGER
+        --
+        foreign_key(usuario_id): INTEGER {NOT NULL}
+        serial: VARCHAR(100) {UNIQUE, NOT NULL}
+        marca: VARCHAR(50)
+        modelo: VARCHAR(50)
+        fecha_vinculacion: DATE
+        --
+        **Normalización:**
+        • 1NF: Atributos atómicos
+        • 2NF: Dependencia funcional completa
+        • 3NF: Independiente de usuario
+    }
+
+    class SENSOR {
+        primary_key(id): INTEGER
+        --
+        foreign_key(dispositivo_id): INTEGER {NOT NULL}
+        tipo: VARCHAR(50) {NOT NULL}
+        unidad: VARCHAR(20)
+        umbral_min: DECIMAL(10,2)
+        umbral_max: DECIMAL(10,2)
+        --
+        **Normalización:**
+        • 1NF: Sin grupos repetitivos
+        • 2NF: Todos los atributos dependen de PK
+        • 3NF: Umbrales asociados directamente a sensor
+        
+        **Tipos comunes:**
+        frecuencia_cardiaca, pasos, temperatura,
+        oxigeno, presion_arterial, calorias
+    }
+}
+
+package "Actividades Físicas" {
+    class ACTIVIDAD {
+        primary_key(id): INTEGER
+        --
+        foreign_key(usuario_id): INTEGER {NOT NULL}
+        tipo: VARCHAR(50)
+        hora_inicio: DATETIME
+        hora_fin: DATETIME
+        duracion_segundos: INTEGER
+        --
+        **Índices:**
+        idx_actividad_usuario_fecha (usuario_id, hora_inicio)
+        
+        **Normalización:**
+        • 1NF: Valores simples (datetime separado)
+        • 2NF: Dependencia total de PK
+        • 3NF: Sin dependencias transitivas
+    }
+}
+
+package "Lecturas y Análisis" {
+    class LECTURA {
+        primary_key(id): INTEGER
+        --
+        foreign_key(sensor_id): INTEGER {NOT NULL}
+        valor: DECIMAL(10,2) {NOT NULL}
+        fecha_hora: DATETIME {DEFAULT CURRENT_TIMESTAMP}
+        --
+        **Índices:**
+        idx_lectura_sensor_fecha (sensor_id, fecha_hora)
+        
+        **Normalización:**
+        • 1NF: Atributos atómicos
+        • 2NF: Valor depende únicamente de PK
+        • 3NF: Fecha_hora es atributo directo, no calculado
+        
+        **Optimización:**
+        Alto volumen de inserts, índice compuesto
+        para consultas temporales eficientes
+    }
+
+    class RESUMEN_DIARIO {
+        primary_key(id): INTEGER
+        --
+        foreign_key(sensor_id): INTEGER {NOT NULL}
+        fecha: DATE {NOT NULL}
+        promedio: DECIMAL(10,2)
+        minimo: DECIMAL(10,2)
+        maximo: DECIMAL(10,2)
+        num_lecturas: INTEGER
+        fecha_actualizacion: DATETIME {DEFAULT CURRENT_TIMESTAMP}
+        --
+        **Constraint:**
+        UNIQUE(sensor_id, fecha)
+        
+        **Normalización:**
+        • 1NF: Atributos atómicos
+        • 2NF: Estadísticas dependen de PK
+        • 3NF: No hay dependencias transitivas
+        • BCNF: Constraint único garantiza integridad
+        
+        **Diseño:**
+        Tabla de materialización para optimizar
+        consultas de tendencias y reportes
+    }
+}
+
+package "Retos y Gamificación" {
+    class RETO {
+        primary_key(id): INTEGER
+        --
+        nombre: VARCHAR(100) {NOT NULL}
+        descripcion: TEXT
+        fecha_inicio: DATE
+        fecha_fin: DATE
+        objetivo_tipo: VARCHAR(50)
+        objetivo_valor: DECIMAL(10,2)
+        estado: VARCHAR(20) {DEFAULT 'activo'}
+        --
+        **Normalización:**
+        • 1NF: Atributos simples
+        • 2NF: Todos dependen de id
+        • 3NF: objetivo_tipo y objetivo_valor
+          son independientes entre sí
+        
+        **Estados:** activo, finalizado, cancelado
+    }
+
+    class RETO_USUARIO {
+        primary_key(id): INTEGER
+        --
+        foreign_key(reto_id): INTEGER {NOT NULL}
+        foreign_key(usuario_id): INTEGER {NOT NULL}
+        progreso: DECIMAL(5,2) {DEFAULT 0}
+        completado: BOOLEAN {DEFAULT 0}
+        --
+        **Constraint:**
+        UNIQUE(reto_id, usuario_id)
+        
+        **Normalización:**
+        • 1NF: Sin multivalores
+        • 2NF: Progreso depende de (reto, usuario)
+        • 3NF: Completado no deriva de progreso
+          (puede completarse sin 100%)
+        • 4NF: Relación N:M normalizada
+        
+        **Propósito:**
+        Tabla de asociación para relación
+        muchos-a-muchos con atributos propios
+    }
+}
+
+' ==================== RELACIONES ====================
+
+USUARIO "1" -- "0..*" PERFIL : tiene >
+USUARIO "1" -- "0..*" DISPOSITIVO : posee >
+USUARIO "1" -- "0..*" ACTIVIDAD : realiza >
+USUARIO "1" -- "0..*" RETO_USUARIO : participa >
+
+DISPOSITIVO "1" -- "0..*" SENSOR : integra >
+
+SENSOR "1" -- "0..*" LECTURA : registra >
+SENSOR "1" -- "0..*" RESUMEN_DIARIO : genera estadísticas >
+
+RETO "1" -- "0..*" RETO_USUARIO : incluye >
+
+' ==================== NOTAS DE NORMALIZACIÓN ====================
+
+note top of USUARIO
+  **Primera Forma Normal (1NF):**
+  ✓ Todos los atributos son atómicos
+  ✓ No hay grupos repetitivos
+  ✓ Cada celda contiene un único valor
+  
+  **Segunda Forma Normal (2NF):**
+  ✓ En 1NF
+  ✓ Todos los atributos no-clave dependen
+    completamente de la clave primaria
+  ✓ No hay dependencias parciales
+  
+  **Tercera Forma Normal (3NF):**
+  ✓ En 2NF
+  ✓ No hay dependencias transitivas
+  ✓ Atributos no-clave son independientes
+    entre sí
+end note
+
+note bottom of SENSOR
+  **Justificación de Diseño:**
+  
+  Separado de DISPOSITIVO para:
+  • Permitir múltiples sensores por dispositivo
+  • Configurar umbrales individuales
+  • Soportar tipos de sensores heterogéneos
+  
+  **Cumple 3NF:**
+  • tipo, unidad, umbral_min, umbral_max
+    dependen únicamente de id del sensor
+  • No hay dependencias entre atributos no-clave
+end note
+
+note right of RESUMEN_DIARIO
+  **Desnormalización controlada:**
+  
+  Tabla de agregación que pre-calcula
+  estadísticas diarias para optimizar
+  consultas de reportes.
+  
+  **Trade-off:**
+  • Ganancia: Consultas 100x más rápidas
+  • Costo: Espacio adicional (mínimo)
+  • Mantenimiento: UPSERT automático
+  
+  **Mantiene 3NF:**
+  • Estadísticas dependen de (sensor_id, fecha)
+  • No hay dependencias transitivas
+  • UNIQUE constraint garantiza integridad
+end note
+
+note left of RETO_USUARIO
+  **Relación Muchos-a-Muchos:**
+  
+  Tabla asociativa entre RETO y USUARIO
+  con atributos adicionales (progreso, completado)
+  
+  **Cumple 4NF:**
+  • Descompone relación M:N en dos 1:N
+  • Elimina dependencias multivaluadas
+  • Permite atributos propios de la relación
+  
+  **Ventajas:**
+  • Un usuario puede participar en múltiples retos
+  • Un reto puede tener múltiples participantes
+  • Rastrea progreso individual
+end note
+
+' ==================== REGLAS DE INTEGRIDAD ====================
+
+note as integrity_rules
+  **REGLAS DE INTEGRIDAD DEL MODELO**
+  
+  **Integridad de Entidad:**
+  • Todas las tablas tienen clave primaria (id)
+  • Las PK son NOT NULL y UNIQUE por definición
+  • Uso de AUTOINCREMENT para generación automática
+  
+  **Integridad Referencial:**
+  • Todas las FK tienen ON DELETE CASCADE
+  • FK apuntan a PK existentes
+  • PRAGMA foreign_keys = ON en SQLite
+  
+  **Integridad de Dominio:**
+  • email: UNIQUE para evitar duplicados
+  • serial: UNIQUE para identificar dispositivos
+  • consentimiento_privacidad: BOOLEAN (0 o 1)
+  • estado_reto: CHECK implícito en aplicación
+  
+  **Restricciones Personalizadas:**
+  • UNIQUE(sensor_id, fecha) en RESUMEN_DIARIO
+  • UNIQUE(reto_id, usuario_id) en RETO_USUARIO
+  • Valores DEFAULT para timestamps y estados
+  
+  **Índices para Optimización:**
+  • idx_actividad_usuario_fecha: Consultas temporales
+  • idx_lectura_sensor_fecha: Series temporales
+  • Índices automáticos en UNIQUE constraints
+end note
+
+' ==================== LEYENDA ====================
+
+legend bottom right
+  **LEYENDA**
+  
+  |= Símbolo |= Significado |
+  |<b><color:#b8861b><&key></color></b> | Llave Primaria (PK) |
+  |<color:#aaaaaa><&key></color> | Llave Foránea (FK) |
+  |<color:#efefef><&media-record></color> | Columna/Atributo |
+  |{NOT NULL} | Restricción de valor requerido |
+  |{UNIQUE} | Restricción de unicidad |
+  |{DEFAULT x} | Valor por defecto |
+  
+  **Cardinalidades:**
+  "1" -- "0..*" : Uno a Muchos (opcional)
+  "1" -- "1..*" : Uno a Muchos (obligatorio)
+  
+  **Formas Normales Aplicadas:**
+  • 1NF: Atomicidad de atributos
+  • 2NF: Dependencia funcional completa
+  • 3NF: Sin dependencias transitivas
+  • BCNF: Constraints únicos adicionales
+  • 4NF: Relaciones M:N normalizadas
+  
+  **VitalTrack v1.0**
+  Sistema normalizado hasta 3NF
+  Base de datos: SQLite 3
+  Diagrama generado con PlantUML
+end legend
+
+@enduml

@@ -1,0 +1,177 @@
+@startuml VitalTrack_ER_Diagram
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b><color:#b8861b><&key></color> x</b>
+!define foreign_key(x) <color:#aaaaaa><&key></color> x
+!define column(x) <color:#efefef><&media-record></color> x
+!define index(x) <color:#4682B4><&list-rich></color> x
+
+' Configuración de estilo
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor LightYellow
+    BorderColor Black
+    ArrowColor Black
+}
+
+' Definición de entidades
+entity "USUARIO" as usuario {
+    primary_key(id): INTEGER
+    --
+    column(cedula): VARCHAR(20)
+    column(nombre): VARCHAR(100) NOT NULL
+    column(email): VARCHAR(120) UNIQUE NOT NULL
+    column(fecha_registro): DATETIME DEFAULT CURRENT_TIMESTAMP
+    column(fecha_nacimiento): DATE
+    column(consentimiento_privacidad): BOOLEAN DEFAULT 1
+}
+
+entity "PERFIL" as perfil {
+    primary_key(id): INTEGER
+    --
+    foreign_key(usuario_id): INTEGER NOT NULL
+    column(objetivo): TEXT
+    column(sexo): VARCHAR(20)
+    column(altura): DECIMAL(5,2)
+    column(estado): VARCHAR(20)
+}
+
+entity "DISPOSITIVO" as dispositivo {
+    primary_key(id): INTEGER
+    --
+    foreign_key(usuario_id): INTEGER NOT NULL
+    column(serial): VARCHAR(100) UNIQUE NOT NULL
+    column(marca): VARCHAR(50)
+    column(modelo): VARCHAR(50)
+    column(fecha_vinculacion): DATE
+}
+
+entity "ACTIVIDAD" as actividad {
+    primary_key(id): INTEGER
+    --
+    foreign_key(usuario_id): INTEGER NOT NULL
+    column(tipo): VARCHAR(50)
+    column(hora_inicio): DATETIME
+    column(hora_fin): DATETIME
+    column(duracion_segundos): INTEGER
+    --
+    index(idx_actividad_usuario_fecha)
+}
+
+entity "SENSOR" as sensor {
+    primary_key(id): INTEGER
+    --
+    foreign_key(dispositivo_id): INTEGER NOT NULL
+    column(tipo): VARCHAR(50) NOT NULL
+    column(unidad): VARCHAR(20)
+    column(umbral_min): DECIMAL(10,2)
+    column(umbral_max): DECIMAL(10,2)
+}
+
+entity "LECTURA" as lectura {
+    primary_key(id): INTEGER
+    --
+    foreign_key(sensor_id): INTEGER NOT NULL
+    column(valor): DECIMAL(10,2) NOT NULL
+    column(fecha_hora): DATETIME DEFAULT CURRENT_TIMESTAMP
+    --
+    index(idx_lectura_sensor_fecha)
+}
+
+entity "RESUMEN_DIARIO" as resumen_diario {
+    primary_key(id): INTEGER
+    --
+    foreign_key(sensor_id): INTEGER NOT NULL
+    column(fecha): DATE NOT NULL UNIQUE(sensor_id, fecha)
+    column(promedio): DECIMAL(10,2)
+    column(minimo): DECIMAL(10,2)
+    column(maximo): DECIMAL(10,2)
+    column(num_lecturas): INTEGER
+    column(fecha_actualizacion): DATETIME DEFAULT CURRENT_TIMESTAMP
+}
+
+entity "RETO" as reto {
+    primary_key(id): INTEGER
+    --
+    column(nombre): VARCHAR(100) NOT NULL
+    column(descripcion): TEXT
+    column(fecha_inicio): DATE
+    column(fecha_fin): DATE
+    column(objetivo_tipo): VARCHAR(50)
+    column(objetivo_valor): DECIMAL(10,2)
+    column(estado): VARCHAR(20) DEFAULT 'activo'
+}
+
+entity "RETO_USUARIO" as reto_usuario {
+    primary_key(id): INTEGER
+    --
+    foreign_key(reto_id): INTEGER NOT NULL
+    foreign_key(usuario_id): INTEGER NOT NULL
+    column(progreso): DECIMAL(5,2) DEFAULT 0
+    column(completado): BOOLEAN DEFAULT 0
+    --
+    column(UNIQUE(reto_id, usuario_id))
+}
+
+' Relaciones
+usuario ||--o{ perfil : "tiene"
+usuario ||--o{ dispositivo : "posee"
+usuario ||--o{ actividad : "realiza"
+usuario ||--o{ reto_usuario : "participa"
+
+dispositivo ||--o{ sensor : "integra"
+
+sensor ||--o{ lectura : "registra"
+sensor ||--o{ resumen_diario : "genera"
+
+reto ||--o{ reto_usuario : "incluye"
+
+' Notas explicativas
+note right of usuario
+  **Entidad principal**
+  Almacena usuarios del sistema
+  con información personal y
+  consentimiento de privacidad.
+end note
+
+note left of sensor
+  **Sensores IoT**
+  Cada dispositivo puede tener
+  múltiples sensores (frecuencia
+  cardíaca, pasos, temperatura,
+  oxígeno, etc.)
+end note
+
+note bottom of resumen_diario
+  **Agregación diaria**
+  Usa UPSERT para actualizar
+  estadísticas automáticamente.
+  Índice único por sensor+fecha.
+end note
+
+note top of reto_usuario
+  **Relación N:M**
+  Permite que múltiples usuarios
+  participen en múltiples retos.
+  Rastrea progreso individual.
+end note
+
+' Leyenda
+legend right
+  |= Color |= Tipo |
+  |<#FFAAAA> | Entidad |
+  |<b><color:#b8861b><&key></color></b> | Llave Primaria |
+  |<color:#aaaaaa><&key></color> | Llave Foránea |
+  |<color:#efefef><&media-record></color> | Columna |
+  |<color:#4682B4><&list-rich></color> | Índice |
+  
+  **Cardinalidades:**
+  ||--o{ : Uno a Muchos
+  }o--o{ : Muchos a Muchos
+  
+  **VitalTrack v1.0**
+  Sistema de monitoreo de salud
+  con dispositivos wearables
+end legend
+
+@enduml
